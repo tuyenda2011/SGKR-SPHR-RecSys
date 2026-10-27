@@ -1,0 +1,7 @@
+model_name: "xsimgcl"
+
+xsimgcl:
+  contrastive_weight: 0.1
+  temperature: 0.2
+  epsilon: 0.1 # sign-aware normalized noise applied after graph propagation
+  contrastive_layer: 1

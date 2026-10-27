@@ -1,0 +1,3 @@
+model_name: "lightgcn"
+
+# LightGCN uses common config parameters without extra contrastive loss hyperparameters.

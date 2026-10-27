@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "counts": {
+    "train": 858192,
+    "validation": 107274,
+    "test": 107274
+  },
+  "ratios": {
+    "train": 0.8,
+    "validation": 0.1,
+    "test": 0.1
+  },
+  "num_users": 124895,
+  "num_items": 44843,
+  "text_embedding_shape": [
+    44843,
+    384
+  ],
+  "temporal_audit": {
+    "timestamp_midnight_fraction": 1.0,
+    "train_validation_tied_users": 45431,
+    "validation_test_tied_users": 42592,
+    "train_validation_order_violations": 0,
+    "validation_test_order_violations": 0,
+    "train_test_order_violations": 0,
+    "strict_temporal_order": false,
+    "negatives_at_training_cutoff": 9559
+  },
+  "metadata_quality": {
+    "num_items": 44843,
+    "missing_or_fallback_titles": 888,
+    "missing_or_unknown_brands": 7351,
+    "generic_or_missing_categories": 0,
+    "missing_title_fraction": 0.019802421782663962,
+    "missing_brand_fraction": 0.16392748032022836,
+    "complete_metadata": 37472,
+    "partial_metadata": 7371,
+    "no_usable_text": 0,
+    "category_only_text": 868
+  },
+  "sparsity": {
+    "1.0": {
+      "edges": 858192,
+      "coverage_preserved": true,
+      "exact_count": true,
+      "users_without_usable_text_history": 0
+    },
+    "0.75": {
+      "edges": 643644,
+      "coverage_preserved": true,
+      "exact_count": true,
+      "users_without_usable_text_history": 0
+    },
+    "0.5": {
+      "edges": 429096,
+      "coverage_preserved": true,
+      "exact_count": true,
+      "users_without_usable_text_history": 0
+    },
+    "0.25": {
+      "edges": 214548,
+      "coverage_preserved": true,
+      "exact_count": true,
+      "users_without_usable_text_history": 0
+    }
+  },
+  "errors": [],
+  "warnings": [
+    "validation: 59 cold-start targets excluded from warm-start metrics",
+    "test: 187 cold-start targets excluded from warm-start metrics",
+    "Timestamp ties cross split boundaries: chronology is non-decreasing, not strict future prediction",
+    "Metadata: 888 titles are missing/fallback",
+    "Metadata: 7351 brands are missing/unknown"
+  ]
+}

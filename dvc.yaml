@@ -1,0 +1,48 @@
+stages:
+  prepare:
+    cmd: python scripts/prepare_data.py --mode full --no-publish --work_dir .tmp/data-pipeline/work
+    deps:
+      - data/raw/amazon-electronics/reviews_Electronics_5.json.gz
+      - data/raw/amazon-electronics/meta_Electronics.json.gz
+      - data/metadata_overrides.csv
+      - configs/common.yaml
+      - scripts/prepare_data.py
+      - src/data/bundle.py
+      - src/data/export.py
+      - src/data/pipeline.py
+      - src/data/loader.py
+      - src/data/preprocessing.py
+      - src/data/metadata_resolution.py
+      - src/data/metadata_overrides.py
+      - src/data/quality_report.py
+      - src/data/splitter.py
+      - src/data/text_encoder.py
+      - src/data/negative_collector.py
+      - src/data/validation.py
+      - src/data/provenance.py
+      - src/utils/config.py
+      - src/utils/config_schemas.py
+    outs:
+      - .tmp/data-pipeline/work/train
+      - .tmp/data-pipeline/work/csv
+      - .tmp/data-pipeline/work/reports
+      - .tmp/data-pipeline/work/manifest.json
+
+  audit:
+    cmd: python scripts/audit_data.py --bundle .tmp/data-pipeline/work --report_dir .tmp/data-pipeline/audit
+    deps:
+      - scripts/audit_data.py
+      - src/data/bundle.py
+      - src/data/provenance.py
+      - src/data/text_encoder.py
+      - src/data/splitter.py
+      - src/data/sparsity.py
+      - src/data/preprocessing.py
+      - src/data/validation.py
+      - .tmp/data-pipeline/work/train
+      - .tmp/data-pipeline/work/csv
+      - .tmp/data-pipeline/work/reports
+      - .tmp/data-pipeline/work/manifest.json
+    outs:
+      - .tmp/data-pipeline/audit/audit_report.json:
+          cache: false

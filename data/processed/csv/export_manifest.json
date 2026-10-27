@@ -1,0 +1,89 @@
+{
+  "build_id": "build_bed0f5b7efb9e7a0a148e2c071540e30",
+  "csv_max_rows_per_file": 500000,
+  "encoding": "utf-8-sig",
+  "files": [
+    {
+      "kind": "train",
+      "path": "csv/train.part-00001.csv",
+      "rows": 500000,
+      "sha256": "de15672578b880515a0a6726507edb205d53a6d2a23ab79d95412f20f704b2b0",
+      "size_bytes": 37285097
+    },
+    {
+      "kind": "train",
+      "path": "csv/train.part-00002.csv",
+      "rows": 358192,
+      "sha256": "34ae33685bb9bbd46533f40e99aa02ade8fcdefb922e7ba2878c5068c8e10254",
+      "size_bytes": 26733423
+    },
+    {
+      "kind": "val",
+      "path": "csv/val.csv",
+      "rows": 107274,
+      "sha256": "3afd7cd791b231f886b2cca7d572f1269eb738841b2713f7cc5526070cca9b7e",
+      "size_bytes": 8011898
+    },
+    {
+      "kind": "test",
+      "path": "csv/test.csv",
+      "rows": 107274,
+      "sha256": "50626c1895d7fe8711fa891729b49422c55c96bccfc6bed3ae61c4b727bba8ee",
+      "size_bytes": 8014716
+    },
+    {
+      "kind": "metadata",
+      "path": "csv/metadata.csv",
+      "rows": 44843,
+      "sha256": "d7692e86519db9ce16863bc259d38bf27b57b6f8272709079cbaf6aeb4bf2503",
+      "size_bytes": 16551531
+    },
+    {
+      "kind": "metadata_issues",
+      "path": "reports/metadata_issues.csv",
+      "rows": 23311,
+      "sha256": "73743283f4added747edaa0fa0c7cbf9f1b6cce2d13c8fe89eb0172fcba7a24f",
+      "size_bytes": 2294109
+    },
+    {
+      "kind": "disliked_interactions",
+      "path": "csv/disliked_interactions.csv",
+      "rows": 65854,
+      "sha256": "f00021ee34dd498ca43f6a2abd5f8c1877c06e519e5ff43aff055cef2b21f2e2",
+      "size_bytes": 5175448
+    },
+    {
+      "kind": "brand_review_queue",
+      "path": "reports/brand_review_queue.csv",
+      "rows": 22423,
+      "sha256": "9116bfc944623541d3f34558481943d3dee1459b1bc247cd1cfd714ed7f7bb9a",
+      "size_bytes": 3293232
+    },
+    {
+      "kind": "brand_review_sample",
+      "path": "reports/brand_review_sample.csv",
+      "rows": 300,
+      "sha256": "e6fc8c5a5e2201bbb6b7734305c6f928d40faff5dcae10640e30b497eda2f893",
+      "size_bytes": 53876
+    },
+    {
+      "kind": "data_quality_summary",
+      "path": "reports/data_quality_summary.csv",
+      "rows": 51,
+      "sha256": "a6ffda94012ae8e59233ff4480d2ae265c67cd99ac73105413b50cd501e586a3",
+      "size_bytes": 2391
+    },
+    {
+      "kind": "inspection_sample",
+      "path": "csv/inspection_sample.csv",
+      "rows": 3000,
+      "sha256": "c43133ddc4af45f72eaaca4ea430a12a88802b8db533e0c6f12a1f7bb84ee4ce",
+      "size_bytes": 239040
+    }
+  ],
+  "formula_protection": "prefix apostrophe for text beginning =,+,-,@",
+  "inspection_rows_per_split": 1000,
+  "null_policy": "empty cell",
+  "schema_version": 1,
+  "seed": 42
+}

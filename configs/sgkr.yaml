@@ -1,0 +1,19 @@
+# SGKR (proposed model 1): item-item ridge regression, closed form. Read by scripts/run_sgkr.py.
+# Locked at Gate B (25/10, selection half; task_codex/KE_HOACH_V2_20261024.md §14.4, row 25):
+# results/experiments/sgkr_default_s100, validation NDCG@20 0.03829.
+# Neighbors are ranked by excess cooccurrence; the retired kernel branch and lift/cosine rules were removed.
+neighbors: 128
+alpha: 10.0
+support_alpha: 2.0
+positive_weight: 10.0
+eta_linear: 1.0e-05
+popularity_tilt: -0.1
+eta_bias: 0.001
+graph_weight: 0.001
+boundary_weight: 0.5
+adaptive_regularization: true
+adaptive_power: 2.0
+adaptive_cap: 10.0
+threads: 1
+correction_batch_size: 1024
+max_cooccurrence_entries: 50000000

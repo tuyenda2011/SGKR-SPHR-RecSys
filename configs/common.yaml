@@ -1,0 +1,39 @@
+dataset:
+  name: "amazon-electronics"
+  reviews_url: "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Electronics_5.json.gz"
+  meta_url: "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Electronics.json.gz"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  bundle_pointer: "data/current.json"
+  metadata_overrides_path: "data/metadata_overrides.csv"
+  text_encoder: "sentence-transformers/all-MiniLM-L6-v2"
+  text_encoder_revision: "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+  positive_rating_threshold: 4.0
+  min_user_interactions: 5
+  min_item_interactions: 5
+  split_ratios: [0.8, 0.1, 0.1] # exact global counts, chronological within selected users
+  split_seed: 42
+
+model:
+  embedding_dim: 64
+  num_layers: 3
+
+training:
+  batch_size: 2048
+  learning_rate: 0.0003
+  weight_decay: 0.0001 # L2 reg weight
+  epochs: 200
+  # No early stopping: every run trains all epochs; the best validation-NDCG@20 checkpoint is kept.
+  early_stopping_patience: 100000
+  seed: 42
+  num_workers: 0
+
+evaluation:
+  monitor: "NDCG@20"
+  top_k: [10, 20]
+  eval_batch_size: 1024
+  model_diagnostics: false
+  diagnostics_sample_size: 4096
+
+sparsity:
+  levels: [1.0, 0.75, 0.50, 0.25]

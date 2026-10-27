@@ -1,0 +1,12 @@
+# SPHR (proposed model 2): history-based factorisation trained with Adam. Read by scripts/tune_sphr.py.
+# Locked 2026-10-26 to arm D2 (results/experiments/sphr_v4_D2_p5, best epoch 71, validation NDCG@20 0.03546).
+# Fixed by the model: history-only users (no user vectors), diffusion-filtered untied source/target item
+# tables, item bias, full-catalog softmax over leave-one-out contexts.
+embedding_dim: 64
+learning_rate: 0.0003
+item_regularization: 0.1
+item_bias_regularization: 0.0001
+item_radius: 100.0
+history_normalization: 0.5
+singleton_history_weight: 0.0
+ranking_temperature: 1.0

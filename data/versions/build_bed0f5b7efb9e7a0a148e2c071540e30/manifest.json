@@ -1,0 +1,502 @@
+{
+  "artifacts": [
+    {
+      "path": "train/disliked_interactions.parquet",
+      "required": false,
+      "rows": 65854,
+      "sha256": "54d5100addc37aba07fb49895aa3fbb102052904c341eeb98a6ba44f6e929bd7",
+      "size_bytes": 562023
+    },
+    {
+      "path": "train/item_text_embeddings.pt",
+      "required": false,
+      "sha256": "a179908d41174d6a57c26796f69bd43538771f2a6114f1bb950369f9146fb18d",
+      "shape": [
+        44843,
+        384
+      ],
+      "size_bytes": 68880172
+    },
+    {
+      "path": "train/item_text_embeddings.pt.json",
+      "required": false,
+      "sha256": "9fd76286834a88cbde602d8b846d81ad748cc10228b8018887883de0214dc95a",
+      "size_bytes": 493961
+    },
+    {
+      "keys": [
+        "item2id",
+        "item_metadata",
+        "stats",
+        "user2id",
+        "user_disliked_items"
+      ],
+      "path": "train/mappings.pkl",
+      "required": true,
+      "sha256": "d4dec432ccf2715fcceb1834a052bc6cdae6c60f9479d29610b553f9b5127879",
+      "size_bytes": 20499464
+    },
+    {
+      "path": "train/test.parquet",
+      "required": true,
+      "rows": 107274,
+      "sha256": "55cc7e102f6bf31f664aff6dfe2e05cb45a04c146eb0bf92d878a37db498d3b0",
+      "size_bytes": 1130193
+    },
+    {
+      "path": "train/train.parquet",
+      "required": true,
+      "rows": 858192,
+      "sha256": "7bde87462c6f463442d4374210ad93896e4fd933cd50680f3b435b510d5ef6bb",
+      "size_bytes": 4822210
+    },
+    {
+      "path": "train/val.parquet",
+      "required": true,
+      "rows": 107274,
+      "sha256": "3ffe1f60e9b70675694df30974512bb7da57deebb0328fc58ce95aa17f0b13f6",
+      "size_bytes": 1144195
+    },
+    {
+      "path": "csv/disliked_interactions.csv",
+      "required": false,
+      "rows": 65854,
+      "sha256": "f00021ee34dd498ca43f6a2abd5f8c1877c06e519e5ff43aff055cef2b21f2e2",
+      "size_bytes": 5175448
+    },
+    {
+      "path": "csv/export_manifest.json",
+      "required": false,
+      "sha256": "35f009b7e612d84dcbc3154da2e462480a2ff9fac39bb4334d17834a3d127ed0",
+      "size_bytes": 2797
+    },
+    {
+      "path": "csv/inspection_sample.csv",
+      "required": false,
+      "rows": 3000,
+      "sha256": "c43133ddc4af45f72eaaca4ea430a12a88802b8db533e0c6f12a1f7bb84ee4ce",
+      "size_bytes": 239040
+    },
+    {
+      "path": "csv/metadata.csv",
+      "required": false,
+      "rows": 44843,
+      "sha256": "d7692e86519db9ce16863bc259d38bf27b57b6f8272709079cbaf6aeb4bf2503",
+      "size_bytes": 16551531
+    },
+    {
+      "path": "csv/test.csv",
+      "required": false,
+      "rows": 107274,
+      "sha256": "50626c1895d7fe8711fa891729b49422c55c96bccfc6bed3ae61c4b727bba8ee",
+      "size_bytes": 8014716
+    },
+    {
+      "path": "csv/train.part-00001.csv",
+      "required": false,
+      "rows": 500000,
+      "sha256": "de15672578b880515a0a6726507edb205d53a6d2a23ab79d95412f20f704b2b0",
+      "size_bytes": 37285097
+    },
+    {
+      "path": "csv/train.part-00002.csv",
+      "required": false,
+      "rows": 358192,
+      "sha256": "34ae33685bb9bbd46533f40e99aa02ade8fcdefb922e7ba2878c5068c8e10254",
+      "size_bytes": 26733423
+    },
+    {
+      "path": "csv/val.csv",
+      "required": false,
+      "rows": 107274,
+      "sha256": "3afd7cd791b231f886b2cca7d572f1269eb738841b2713f7cc5526070cca9b7e",
+      "size_bytes": 8011898
+    },
+    {
+      "path": "reports/audit_report.json",
+      "required": false,
+      "sha256": "bdf2c250a9a112d2ef0ca12841868a0033f880881e3f8a2b552e8e4d8e030819",
+      "size_bytes": 2097
+    },
+    {
+      "path": "reports/brand_review_queue.csv",
+      "required": false,
+      "rows": 22423,
+      "sha256": "9116bfc944623541d3f34558481943d3dee1459b1bc247cd1cfd714ed7f7bb9a",
+      "size_bytes": 3293232
+    },
+    {
+      "path": "reports/brand_review_sample.csv",
+      "required": false,
+      "rows": 300,
+      "sha256": "e6fc8c5a5e2201bbb6b7734305c6f928d40faff5dcae10640e30b497eda2f893",
+      "size_bytes": 53876
+    },
+    {
+      "path": "reports/data_quality_report.json",
+      "required": false,
+      "sha256": "62b92bb39b233ca12dd0c38d3a1774c51efcb9a720a979a591227e773cf94c5e",
+      "size_bytes": 4810
+    },
+    {
+      "path": "reports/data_quality_summary.csv",
+      "required": false,
+      "rows": 51,
+      "sha256": "a6ffda94012ae8e59233ff4480d2ae265c67cd99ac73105413b50cd501e586a3",
+      "size_bytes": 2391
+    },
+    {
+      "path": "reports/metadata_issues.csv",
+      "required": false,
+      "rows": 23311,
+      "sha256": "73743283f4added747edaa0fa0c7cbf9f1b6cce2d13c8fe89eb0172fcba7a24f",
+      "size_bytes": 2294109
+    }
+  ],
+  "build_id": "build_bed0f5b7efb9e7a0a148e2c071540e30",
+  "build_options": {
+    "bundle_layout_version": 3,
+    "csv_max_rows": 500000,
+    "export_csv": true,
+    "extract_hard_negatives": true,
+    "extract_text_embeddings": true,
+    "inspection_rows": 1000
+  },
+  "config": {
+    "dataset": {
+      "bundle_pointer": "data/current.json",
+      "meta_url": "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/meta_Electronics.json.gz",
+      "metadata_overrides_path": "data/metadata_overrides.csv",
+      "min_item_interactions": 5,
+      "min_user_interactions": 5,
+      "name": "amazon-electronics",
+      "positive_rating_threshold": 4.0,
+      "processed_dir": "train",
+      "raw_dir": "data/raw",
+      "reviews_url": "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Electronics_5.json.gz",
+      "split_ratios": [
+        0.8,
+        0.1,
+        0.1
+      ],
+      "split_seed": 42,
+      "text_encoder": "sentence-transformers/all-MiniLM-L6-v2",
+      "text_encoder_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    },
+    "evaluation": {
+      "diagnostics_sample_size": 4096,
+      "eval_batch_size": 1024,
+      "model_diagnostics": false,
+      "monitor": "NDCG@20",
+      "top_k": [
+        10,
+        20
+      ]
+    },
+    "model": {
+      "embedding_dim": 64,
+      "num_layers": 3
+    },
+    "model_name": "lightgcn",
+    "sparsity": {
+      "levels": [
+        1.0,
+        0.75,
+        0.5,
+        0.25
+      ]
+    },
+    "training": {
+      "batch_size": 2048,
+      "early_stopping_patience": 20,
+      "epochs": 100,
+      "learning_rate": 0.001,
+      "num_workers": 0,
+      "seed": 42,
+      "weight_decay": 0.0001
+    }
+  },
+  "created_at": "2026-10-08T16:48:32.544399+00:00",
+  "dataset": "amazon-electronics",
+  "encoder": {
+    "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+  },
+  "input_fingerprint": "bed0f5b7efb9e7a0a148e2c071540e303591b07d7598718898b5f1c87d20a608",
+  "metadata_policy": "metadata_policy_v2",
+  "optional_artifacts": {
+    "csv": "present",
+    "disliked_interactions.parquet": "present"
+  },
+  "ordered_id_fingerprint": "3a9761b9df63f9b82618e0ad737450d9e6b26d9d60e2b1ac96b1b09b82dcd7e5",
+  "preprocessing": {
+    "chronology_scope": "per_user_non_decreasing; ties do not establish intraday order",
+    "kcore_converged": true,
+    "kcore_scope": "full_positive_graph_before_split",
+    "min_item_interactions": 5,
+    "min_user_interactions": 5,
+    "positive_dedup_policy": "positive_only_latest_timestamp_then_highest_rating",
+    "positive_rating_threshold": 4.0,
+    "requested_split_ratios": [
+      0.8,
+      0.1,
+      0.1
+    ],
+    "split_protocol": "exact_chronological_selected_users",
+    "split_seed": 42,
+    "timestamp_tie_policy": "seeded_user_item_hash_then_item_id"
+  },
+  "schema_version": 1,
+  "source_files": [
+    {
+      "path": "data/raw/amazon-electronics/meta_Electronics.json.gz",
+      "sha256": "4d01fff21369dabed5a893861cd0f72359a77971c69181d680a44faa55d91ac8",
+      "size_bytes": 186594679
+    },
+    {
+      "path": "data/raw/amazon-electronics/reviews_Electronics_5.json.gz",
+      "sha256": "af3e7686df7ba4d1ea617197cc5e236c761367e86626c7d9246ac2fc79e36358",
+      "size_bytes": 495854086
+    }
+  ],
+  "statistics": {
+    "actual_split_ratios": [
+      0.8,
+      0.1,
+      0.1
+    ],
+    "brand_review_queue": {
+      "auto_fallback_rows": 15072,
+      "candidate_rows": 18152,
+      "path": "reports/brand_review_queue.csv",
+      "rows": 22423,
+      "sample_path": "reports/brand_review_sample.csv",
+      "sample_rows": 300
+    },
+    "density": 0.00019153791836615673,
+    "evaluation_users": 107274,
+    "filter_ledger": {
+      "after_dedup": 1356067,
+      "input_ratings": 1689188,
+      "kcore_rounds": [
+        {
+          "after": 1142453,
+          "before": 1356067,
+          "removed": 213614,
+          "round": 1
+        },
+        {
+          "after": 1100136,
+          "before": 1142453,
+          "removed": 42317,
+          "round": 2
+        },
+        {
+          "after": 1081403,
+          "before": 1100136,
+          "removed": 18733,
+          "round": 3
+        },
+        {
+          "after": 1076334,
+          "before": 1081403,
+          "removed": 5069,
+          "round": 4
+        },
+        {
+          "after": 1074046,
+          "before": 1076334,
+          "removed": 2288,
+          "round": 5
+        },
+        {
+          "after": 1073280,
+          "before": 1074046,
+          "removed": 766,
+          "round": 6
+        },
+        {
+          "after": 1072920,
+          "before": 1073280,
+          "removed": 360,
+          "round": 7
+        },
+        {
+          "after": 1072832,
+          "before": 1072920,
+          "removed": 88,
+          "round": 8
+        },
+        {
+          "after": 1072764,
+          "before": 1072832,
+          "removed": 68,
+          "round": 9
+        },
+        {
+          "after": 1072748,
+          "before": 1072764,
+          "removed": 16,
+          "round": 10
+        },
+        {
+          "after": 1072744,
+          "before": 1072748,
+          "removed": 4,
+          "round": 11
+        },
+        {
+          "after": 1072740,
+          "before": 1072744,
+          "removed": 4,
+          "round": 12
+        },
+        {
+          "after": 1072740,
+          "before": 1072740,
+          "removed": 0,
+          "round": 13
+        }
+      ],
+      "output_interactions": 1072740,
+      "positive_ratings": 1356067,
+      "removed_by_rating": 333121,
+      "removed_duplicates": 0
+    },
+    "hard_negative_interactions": 65854,
+    "ingestion_ledger": {
+      "metadata": {
+        "blank_lines": 0,
+        "error_examples": [],
+        "invalid_lines": 0,
+        "parsed_rows": 498196,
+        "total_lines": 498196
+      },
+      "reviews": {
+        "blank_lines": 0,
+        "error_examples": [],
+        "invalid_lines": 0,
+        "parsed_rows": 1689188,
+        "total_lines": 1689188
+      }
+    },
+    "kcore_iterations": 13,
+    "max_user_interactions": 354,
+    "mean_item_interactions": 23.922128314341144,
+    "mean_user_interactions": 8.589134873293567,
+    "median_user_interactions": 6.0,
+    "metadata_overrides": {
+      "applied": 38,
+      "entries": 38,
+      "path": "data/metadata_overrides.csv",
+      "sha256": "2a65656f4101c5fd3ca5c44c7769455597aa908be7954fcde1992d85b70c71e6"
+    },
+    "metadata_quality": {
+      "category_only_text": 868,
+      "complete_metadata": 37472,
+      "generic_or_missing_categories": 0,
+      "missing_brand_fraction": 0.16392748032022836,
+      "missing_or_fallback_titles": 888,
+      "missing_or_unknown_brands": 7351,
+      "missing_title_fraction": 0.019802421782663962,
+      "no_usable_text": 0,
+      "num_items": 44843,
+      "partial_metadata": 7371
+    },
+    "metadata_resolution": {
+      "brand_candidate_count": 3080,
+      "brand_sources": {
+        "metadata": 22382,
+        "missing": 7351,
+        "override": 38,
+        "title_fallback": 15072
+      },
+      "fallback_policy": "official_brand_frequency_ge3_or_curated_short_title_prefix_v2",
+      "filtered_asin_count": 44843,
+      "filtered_asin_matched": 44843,
+      "matched_items_with_brand": 22382,
+      "processed_brands_after": 37492,
+      "processed_brands_before": 22420,
+      "raw_meta_records": 498196,
+      "raw_meta_records_with_brand": 137962,
+      "short_brand_allowlist": [
+        "GE",
+        "HP",
+        "IBM",
+        "JVC",
+        "KLH",
+        "LG",
+        "RCA",
+        "WD"
+      ],
+      "title_sources": {
+        "metadata": 43955,
+        "missing": 888
+      }
+    },
+    "min_item_interactions": 5,
+    "min_user_interactions": 5,
+    "num_interactions": 1072740,
+    "num_items": 44843,
+    "num_users": 124895,
+    "raw_metadata_quality": {
+      "fields": {
+        "brand": {
+          "column_present": true,
+          "missing_or_placeholder": 360234,
+          "null_or_blank": 356826,
+          "placeholder": 4570
+        },
+        "categories": {
+          "column_present": true,
+          "missing_or_placeholder": 0,
+          "null_or_blank": 0,
+          "placeholder": 0
+        },
+        "title": {
+          "column_present": true,
+          "missing_or_placeholder": 7004,
+          "null_or_blank": 7002,
+          "placeholder": 2
+        }
+      },
+      "rows": 498196
+    },
+    "temporal_audit": {
+      "strict_temporal_order": false,
+      "timestamp_midnight_fraction": 1.0,
+      "train_test_order_violations": 0,
+      "train_validation_order_violations": 0,
+      "train_validation_tied_users": 45431,
+      "validation_test_order_violations": 0,
+      "validation_test_tied_users": 42592
+    },
+    "test_cold_start_targets": 187,
+    "test_interactions": 107274,
+    "train_interactions": 858192,
+    "train_only_users": 17621,
+    "validation_cold_start_targets": 59,
+    "validation_interactions": 107274
+  },
+  "text_features": {
+    "backend": "sentence_transformers",
+    "encoder": "sentence-transformers/all-MiniLM-L6-v2",
+    "format_version": 3,
+    "input_fingerprint": "b9fd24f67547af66475a59b6dadbfdde0db7c5fc96ffe1b188521fce4fd589b6",
+    "metadata_policy": "title_or_brand_or_specific_category_v2",
+    "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+    "normalized": "usable_rows_unit_norm; masked_rows_zero",
+    "resolved_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+    "sha256": "a179908d41174d6a57c26796f69bd43538771f2a6114f1bb950369f9146fb18d",
+    "shape": [
+      44843,
+      384
+    ],
+    "software_versions": {
+      "sentence-transformers": "6.0.0",
+      "tokenizers": "0.22.2",
+      "transformers": "5.15.1"
+    }
+  }
+}

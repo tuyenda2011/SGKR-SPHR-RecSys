@@ -1,0 +1,182 @@
+{
+  "dataset": {
+    "users": 124895,
+    "items": 44843,
+    "interactions": 1072740
+  },
+  "split": {
+    "counts": {
+      "train": 858192,
+      "val": 107274,
+      "test": 107274
+    },
+    "train_users": 124895,
+    "val_users": 107274,
+    "test_users": 107274,
+    "train_only_users": 17621,
+    "train_and_val_users": 107274,
+    "train_and_test_users": 107274,
+    "all_splits_users": 107274,
+    "coverage_cause": "seeded subset of users gets last two targets to achieve exact global ratios; not a global time cutoff"
+  },
+  "cold_start": {
+    "val": {
+      "total_targets": 107274,
+      "warm_targets": 107215,
+      "cold_item_targets": 59,
+      "cold_item_rate": 0.0005499934746536905,
+      "unique_cold_items": 29,
+      "users_without_train_history": 0,
+      "evaluable_users": 107215,
+      "user_coverage": 0.8584410905160335
+    },
+    "test": {
+      "total_targets": 107274,
+      "warm_targets": 107087,
+      "cold_item_targets": 187,
+      "cold_item_rate": 0.0017431996569532227,
+      "unique_cold_items": 38,
+      "users_without_train_history": 0,
+      "evaluable_users": 107087,
+      "user_coverage": 0.8574162296328917
+    },
+    "unique_cold_items_union": 40
+  },
+  "timestamp": {
+    "midnight_fraction": 1.0,
+    "tie_users": 103732,
+    "tie_interactions": 556128,
+    "max_tie_group": 56,
+    "median_tie_group": 2.0,
+    "tie_policy": "existing seeded_user_item_hash_then_item_id preserved for benchmark compatibility; not intraday chronology"
+  },
+  "sparsity": {
+    "density": 0.00019153791836615673,
+    "sparsity": 0.9998084620816339,
+    "user_degree": {
+      "mean": 8.589134873293567,
+      "median": 6.0,
+      "p25": 5.0,
+      "p75": 9.0,
+      "p90": 14.0,
+      "max": 354
+    },
+    "item_degree": {
+      "mean": 23.922128314341144,
+      "median": 10.0,
+      "p25": 6.0,
+      "p75": 21.0,
+      "p90": 45.0,
+      "max": 3792
+    }
+  },
+  "metadata": {
+    "raw_meta_records": 498196,
+    "raw_meta_records_with_brand": 137962,
+    "filtered_asin_count": 44843,
+    "filtered_asin_matched": 44843,
+    "matched_items_with_brand": 22382,
+    "processed_brands_before": 22420,
+    "processed_brands_after": 37492,
+    "brand_sources": {
+      "metadata": 22382,
+      "title_fallback": 15072,
+      "missing": 7351,
+      "override": 38
+    },
+    "title_sources": {
+      "metadata": 43955,
+      "missing": 888
+    },
+    "brand_candidate_count": 3080,
+    "fallback_policy": "official_brand_frequency_ge3_or_curated_short_title_prefix_v2",
+    "short_brand_allowlist": [
+      "GE",
+      "HP",
+      "IBM",
+      "JVC",
+      "KLH",
+      "LG",
+      "RCA",
+      "WD"
+    ]
+  },
+  "raw_metadata_quality": {
+    "rows": 498196,
+    "fields": {
+      "title": {
+        "column_present": true,
+        "missing_or_placeholder": 7004,
+        "null_or_blank": 7002,
+        "placeholder": 2
+      },
+      "brand": {
+        "column_present": true,
+        "missing_or_placeholder": 360234,
+        "null_or_blank": 356826,
+        "placeholder": 4570
+      },
+      "categories": {
+        "column_present": true,
+        "missing_or_placeholder": 0,
+        "null_or_blank": 0,
+        "placeholder": 0
+      }
+    }
+  },
+  "metadata_quality_after": {
+    "num_items": 44843,
+    "missing_or_fallback_titles": 888,
+    "missing_or_unknown_brands": 7351,
+    "generic_or_missing_categories": 0,
+    "missing_title_fraction": 0.019802421782663962,
+    "missing_brand_fraction": 0.16392748032022836,
+    "complete_metadata": 37472,
+    "partial_metadata": 7371,
+    "no_usable_text": 0,
+    "category_only_text": 868
+  },
+  "ratings": {
+    "total_raw_reviews": 1689188,
+    "positive_threshold": 4.0,
+    "positive_reviews": 1356067,
+    "ratings_below_threshold": 333121,
+    "positive_ratio": 0.8027922291657293
+  },
+  "brand_review_queue": {
+    "rows": 22423,
+    "candidate_rows": 18152
+  },
+  "brand_review_sample": {
+    "rows": 300,
+    "seed": 42
+  },
+  "brand_coverage": 0.8360725196797716,
+  "title_coverage": 0.980197578217336,
+  "sparsity_levels": {
+    "1.0": {
+      "edges": 858192,
+      "coverage_preserved": true,
+      "exact_count": true,
+      "users_without_usable_text_history": 0
+    },
+    "0.75": {
+      "edges": 643644,
+      "coverage_preserved": true,
+      "exact_count": true,
+      "users_without_usable_text_history": 0
+    },
+    "0.5": {
+      "edges": 429096,
+      "coverage_preserved": true,
+      "exact_count": true,
+      "users_without_usable_text_history": 0
+    },
+    "0.25": {
+      "edges": 214548,
+      "coverage_preserved": true,
+      "exact_count": true,
+      "users_without_usable_text_history": 0
+    }
+  }
+}
