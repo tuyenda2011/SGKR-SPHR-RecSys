@@ -4,11 +4,11 @@ Called by train_model.py --model ease. Same retained train sample, warm cohort, 
 and Evaluator as run_sgkr.py; the full catalog is kept (no item pruning). Metrics and validation
 predictions come from the full dense item-item matrix. That matrix (~8 GB) is not saved: model.npz keeps
 the top-k weights of each target item for the demo, and its own validation metrics are recorded.
+Run records (plan, source archive, progress, budget) follow run_sgkr.py via scripts/closed_form_run.py.
 """
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import time
 from pathlib import Path
@@ -19,18 +19,12 @@ sys.path.insert(0, str(ROOT))
 import numpy as np
 import psutil
 import pyarrow  # noqa: F401 -- load Arrow DLLs before Torch on Windows
-import torch
 from scipy import sparse
 from scipy.linalg import lapack
 
+from scripts.closed_form_run import Run
 from scripts.config_io import read_model_config
 from scripts.extra.run_item_baselines import ItemScores
-from scripts.validation_io import edge_hash, load_validation_inputs
-from src.data.quality_report import warm_cohort
-from src.data.sparsity import create_sparse_train_set
-from src.evaluation.evaluator import EVALUATION_PROTOCOL, Evaluator
-from src.evaluation.metrics import compute_topk_metrics
-from src.models.sgkr import SGKR
 
 
 def ease_memory_required(num_items):
@@ -88,60 +82,36 @@ def prune_columns(weights, k, block=512):
                               (np.concatenate(rows), np.concatenate(columns))), shape=weights.shape)
 
 
-def evaluate(x, weights, full_train, validation, train, batch):
-    evaluator = Evaluator(full_train, validation, *x.shape, [10, 20], batch,
-                          candidate_items=set(train.i_idx.unique()), popularity_df=train,
-                          score_fn=ItemScores(x, weights).get_user_rating_scores)
-    predictions, latency = evaluator.get_predictions(torch.empty(0), torch.empty(0), torch.device("cpu"))
-    for row, user in enumerate(evaluator.eval_users):
-        chosen = predictions[row].tolist()
-        if len(set(chosen)) != 20 or set(chosen) & evaluator.train_history.get(user, set()):
-            raise AssertionError("Duplicate or seen recommendations")
-        if not set(chosen) <= evaluator.candidate_items:
-            raise AssertionError("Noncandidate recommendation")
-    return evaluator, predictions, latency, compute_topk_metrics(evaluator.ground_truth, predictions, [10, 20])
-
-
-def write_json(path, value):
-    temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n", encoding="utf-8", newline="\n")
-    temporary.replace(path)
-
-
 def run(args):
-    output = args.output.resolve()
-    output.mkdir(parents=True, exist_ok=False)
     config = read_model_config(args.config, "ease")
-    bundle, full_train, validation, stats = load_validation_inputs(None, ROOT)
-    train = create_sparse_train_set(full_train, args.sparsity, args.density_seed)
-    validation, cohort = warm_cohort(train, validation)
-    if validation.empty:
-        raise ValueError("No warm validation targets")
-    x = SGKR.interaction_matrix(train.u_idx.to_numpy(), train.i_idx.to_numpy(), stats["num_users"], stats["num_items"])
-    write_json(output / "plan.json", {"status": "prepared", "validation_only": True, "config": config,
-                                      "density": args.sparsity, "density_seed": args.density_seed,
-                                      "bundle_id": bundle.build_id, "retained_sha256": edge_hash(train),
-                                      "evaluation_protocol": EVALUATION_PROTOCOL, "catalog_size": x.shape[1],
-                                      "required_free_bytes": ease_memory_required(x.shape[1])})
-    started = time.perf_counter()
-    weights = ease(x, config["l2"])  # raises MemoryError instead of shrinking the catalog
-    seconds = time.perf_counter() - started
+    run = Run("ease", args, config, __file__, solver="cholesky_inplace_float32_cpu (LAPACK potrf + potri)")
+    run.plan["required_free_bytes"] = ease_memory_required(run.x.shape[1])
+    with run.tracked():
+        started = time.perf_counter()
+        weights = ease(run.x, config["l2"])  # raises MemoryError instead of shrinking the catalog
+        fit_seconds = time.perf_counter() - started
+        run.progress("fitted", fit_seconds=fit_seconds)
+        evaluator, predictions, latency, metrics = run.evaluate(ItemScores(run.x, weights).get_user_rating_scores,
+                                                                args.eval_batch_size)
+        run.save_predictions(evaluator, predictions)
+        run.progress("evaluated_full_matrix", NDCG20=metrics["NDCG@20"])
 
-    evaluator, predictions, latency, metrics = evaluate(x, weights, full_train, validation, train, args.eval_batch_size)
-    np.save(output / "val_predictions.npy", predictions.numpy().astype(np.int64, copy=False))
-    np.save(output / "val_users.npy", np.asarray(evaluator.eval_users, dtype=np.int64))
-
-    pruned = prune_columns(weights, config["checkpoint_neighbors"])
-    evaluator.score_fn = None  # release the dense matrix before the second pass
-    del weights
-    sparse.save_npz(output / "model.npz", pruned)
-    _, pruned_predictions, _, pruned_metrics = evaluate(x, pruned, full_train, validation, train, args.eval_batch_size)
-    overlap = float((pruned_predictions == predictions).float().mean())
-    result = {"model": "ease", "validation_only": True, "val_metrics": metrics, "seconds": seconds,
-              "inference_latency_ms_per_user": latency, "validation_cohort": cohort, "config": config,
-              "checkpoint_val_metrics": pruned_metrics, "checkpoint_top20_same_position_rate": overlap}
-    write_json(output / "result.json", result)
-    return result
+        pruned = prune_columns(weights, config["checkpoint_neighbors"])
+        evaluator.score_fn = None  # release the dense matrix before the second pass
+        del weights
+        def save(temporary):
+            with open(temporary, "xb") as stream:  # a path without .npz would get the suffix appended
+                sparse.save_npz(stream, pruned)
+        run.guard.atomic_write(run.output / "model.npz", save)
+        _, pruned_predictions, _, pruned_metrics = run.evaluate(ItemScores(run.x, pruned).get_user_rating_scores,
+                                                                args.eval_batch_size)
+        run.progress("evaluated_checkpoint", NDCG20=pruned_metrics["NDCG@20"])
+        overlap = float((pruned_predictions == predictions).float().mean())
+        return run.finish({"val_metrics": metrics, "config": config,
+                           "fit_report": {"seconds": fit_seconds, "solver": run.plan["solver"]},
+                           "inference_latency_ms_per_user": latency,
+                           "validation_cohort": run.plan["validation_cohort"],
+                           "checkpoint_val_metrics": pruned_metrics, "checkpoint_top20_same_position_rate": overlap})
 
 
 def parser():

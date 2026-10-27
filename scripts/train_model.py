@@ -148,7 +148,7 @@ def finish_ease(logs, out):
     # val_metrics come from the full dense matrix (~8 GB, not kept); checkpoint.npz is its top-k per item.
     link(logs / "ease" / "model.npz", out / "checkpoint.npz")
     return {"val_metrics": result["val_metrics"], "best_epoch": None, "epochs_run": 0,
-            "train_seconds": result["seconds"], "inference_ms_per_user": result["inference_latency_ms_per_user"],
+            "train_seconds": result["fit_report"]["seconds"], "inference_ms_per_user": result["inference_latency_ms_per_user"],
             "checkpoint": "checkpoint.npz", "checkpoint_val_metrics": result["checkpoint_val_metrics"],
             "config": result["config"]}
 
