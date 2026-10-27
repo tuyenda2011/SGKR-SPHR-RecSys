@@ -3,4 +3,5 @@
 # defaults for every dataset except Amazon-book, where they dropped the ideal term (ideal_weight 0).
 singular_vectors: 256
 ideal_weight: 0.3
-svd_seed: 0
+svd_seed: 0               # only used by the arpack backend
+svd_backend: sparsesvd    # the authors' SVD library (SVDLIBC); pip install sparsesvd builds it on Linux/Kaggle

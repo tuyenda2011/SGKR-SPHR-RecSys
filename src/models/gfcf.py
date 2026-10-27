@@ -5,6 +5,8 @@ R~ = D_U^-1/2 R D_I^-1/2 (degree-normalised interactions), V_k = top-k right sin
 The first term is the linear low-pass filter, the second the ideal low-pass filter; r_u is the raw
 (unnormalised) interaction row, as in the authors' reference implementation. No gradient training,
 no dense user-by-item or item-by-item allocation: both terms are applied batch by batch.
+V_k comes from the authors' SVD library (sparsesvd, SVDLIBC Lanczos) by default; scipy's ARPACK gives
+the same subspace but is far too slow for k=256 on the full data, so it is only for small tests.
 """
 from __future__ import annotations
 
@@ -23,8 +25,11 @@ class GFCFConfig:
     singular_vectors: int = 256   # k of the ideal low-pass filter (paper default)
     ideal_weight: float = 0.3     # weight of the ideal low-pass term (paper default)
     svd_seed: int = 0             # ARPACK start vector; V_k^T V_k does not depend on singular-vector signs
+    svd_backend: str = "sparsesvd"  # "sparsesvd" (authors' library) or "arpack" (scipy, small tests only)
 
     def __post_init__(self):
+        if self.svd_backend not in ("sparsesvd", "arpack"):
+            raise ValueError("svd_backend must be 'sparsesvd' or 'arpack'")
         if isinstance(self.singular_vectors, bool) or not isinstance(self.singular_vectors, int) or self.singular_vectors < 0:
             raise ValueError("singular_vectors must be a nonnegative integer")
         if isinstance(self.ideal_weight, bool) or not np.isfinite(self.ideal_weight) or self.ideal_weight < 0:
@@ -53,14 +58,21 @@ class GFCF:
         if k:
             if k >= min(self.normalized.shape):
                 raise ValueError("singular_vectors must be smaller than both matrix dimensions")
-            start = np.random.default_rng(self.config.svd_seed).standard_normal(min(self.normalized.shape))
-            _, singular_values, vt = svds(self.normalized, k=k, v0=start)
+            if self.config.svd_backend == "sparsesvd":
+                from sparsesvd import sparsesvd  # pip install sparsesvd (builds from source; Linux/Kaggle)
+                _, singular_values, vt = sparsesvd(self.normalized.tocsc(), k)
+                if len(singular_values) != k:
+                    raise ValueError(f"sparsesvd returned {len(singular_values)} singular vectors, expected {k}")
+            else:
+                start = np.random.default_rng(self.config.svd_seed).standard_normal(min(self.normalized.shape))
+                _, singular_values, vt = svds(self.normalized, k=k, v0=start)
             self.vt = vt.astype(np.float32)
             self.singular_values = np.sort(singular_values)[::-1]
         else:
             self.vt = np.zeros((0, self.interactions.shape[1]), dtype=np.float32)
             self.singular_values = np.zeros(0)
         self.fit_report = {"seconds": time.perf_counter() - started, "singular_vectors": k,
+                           "svd_backend": self.config.svd_backend,
                            "largest_singular_value": float(self.singular_values[0]) if k else None,
                            "smallest_kept_singular_value": float(self.singular_values[-1]) if k else None}
         self.fitted = True
