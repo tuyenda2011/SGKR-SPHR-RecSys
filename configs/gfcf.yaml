@@ -3,5 +3,8 @@
 # defaults for every dataset except Amazon-book, where they dropped the ideal term (ideal_weight 0).
 singular_vectors: 256
 ideal_weight: 0.3
-svd_seed: 0               # only used by the arpack backend
-svd_backend: sparsesvd    # the authors' SVD library (SVDLIBC); pip install sparsesvd builds it on Linux/Kaggle
+svd_seed: 0                # start block of the iterative SVD
+# Top-k SVD converged to tolerance, as in the authors' code. Their library (sparsesvd) no longer builds
+# with numpy 2 (needs numpy.distutils), so V_k comes from block subspace iteration on R~^T R~ with
+# Rayleigh-Ritz, stopped when every kept pair has relative residual < 1e-8 (sparse, light on RAM).
+svd_backend: subspace
