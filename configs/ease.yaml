@@ -1,4 +1,8 @@
 # EASE (extra baseline; Steck, WWW 2019): closed-form item-item ridge regression with zero diagonal.
 # Read by scripts/run_ease.py. One fixed configuration for every density (not tuned).
-# Exact solve on the full 44,843-item catalog: needs ~25 GB free RAM (run on Kaggle CPU, not locally).
+# Exact in-place Cholesky solve on the full 44,843-item catalog: needs ~9 GB free RAM.
 l2: 300.0   # ridge penalty (middle of the repo's EASE grid 100/300/1000)
+# The dense weight matrix (~8 GB) cannot be kept; checkpoint.npz stores the top-k weights of each target
+# item (k = SGKR's neighbors) for the demo. Reported metrics come from the full matrix; the pruned
+# checkpoint's own validation metrics are recorded separately (checkpoint_val_metrics).
+checkpoint_neighbors: 128

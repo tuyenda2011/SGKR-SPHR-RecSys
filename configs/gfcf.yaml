@@ -1,0 +1,6 @@
+# GF-CF (extra baseline; Shen et al., CIKM 2021): training-free linear + ideal low-pass graph filter.
+# Read by scripts/run_gfcf.py. One fixed configuration for every density (not tuned): the authors'
+# defaults for every dataset except Amazon-book, where they dropped the ideal term (ideal_weight 0).
+singular_vectors: 256
+ideal_weight: 0.3
+svd_seed: 0

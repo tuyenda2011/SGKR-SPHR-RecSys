@@ -162,10 +162,10 @@ def tab_existing(data, samples, eligible):
                     f'<span class="sub">{html.escape(brand)} · {html.escape(leaf)}</span></div>',
                     unsafe_allow_html=True)
     with right:
-        st.markdown(f'#### Top-10 gợi ý của 5 mô hình <span class="legend">&nbsp;&nbsp;<span class="tick">✓</span>'
+        st.markdown(f'#### Top-10 gợi ý của {len(MODELS)} mô hình <span class="legend">&nbsp;&nbsp;<span class="tick">✓</span>'
                     f' trúng sản phẩm mua tiếp theo</span>', unsafe_allow_html=True)
         loaded = rankers(density)
-        for column, model in zip(st.columns(5, gap="small"), MODELS):
+        for column, model in zip(st.columns(len(MODELS), gap="small"), MODELS):
             ranker = loaded[model]
             with column:
                 if ranker is None:
@@ -215,15 +215,15 @@ def tab_new_user(data):
             st.session_state.asked = list(picked)
     with right:
         st.markdown("#### User này chưa từng có trong dữ liệu train")
-        st.markdown("SGKR và SPHR gợi ý ngay từ lịch sử mua; ba baseline phải train lại.")
+        st.markdown("SGKR, SPHR, EASE và GF-CF gợi ý ngay từ lịch sử mua; ba baseline embedding phải train lại.")
         asked = st.session_state.get("asked")
-        for column, model in zip(st.columns(5, gap="small"), MODELS):
+        for column, model in zip(st.columns(len(MODELS), gap="small"), MODELS):
             with column:
-                if model not in PROPOSED:
+                if loaded[model] is None:
+                    st.markdown(empty_card(model, "Chưa train", f"ở mật độ {density}"), unsafe_allow_html=True)
+                elif not loaded[model].supports_new_users:
                     st.markdown(empty_card(model, "Cần train lại", "Chưa có vector embedding cho user này",
                                            locked=True), unsafe_allow_html=True)
-                elif loaded[model] is None:
-                    st.markdown(empty_card(model, "Chưa train", f"ở mật độ {density}"), unsafe_allow_html=True)
                 elif not asked:
                     st.markdown(empty_card(model, "Chọn sản phẩm rồi bấm “Gợi ý ngay”"), unsafe_allow_html=True)
                 else:

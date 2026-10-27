@@ -1,4 +1,4 @@
-"""Train one of the five reported models (or the extra EASE baseline) and file its outputs in one layout.
+"""Train one of the five reported models (or the extra EASE / GF-CF baselines) and file its outputs in one layout.
 
   python scripts/train_model.py --model xsimgcl --density 1.0 --seed 42 --epochs 200
 
@@ -31,8 +31,8 @@ import pandas as pd
 import torch
 
 BASELINES = ("lightgcn", "xsimgcl", "directau")
-CLOSED_FORM = ("sgkr", "ease")  # no epochs; ease (extra baseline) needs ~25 GB free RAM
-MODELS = (*BASELINES, "sgkr", "sphr", "ease")
+CLOSED_FORM = ("sgkr", "ease", "gfcf")  # no epochs; ease (extra baseline) needs ~9 GB free RAM
+MODELS = (*BASELINES, "sgkr", "sphr", "ease", "gfcf")
 DENSITIES = (1.0, 0.75, 0.5, 0.25)
 
 
@@ -145,10 +145,27 @@ def finish_ease(logs, out):
     result = json.loads((logs / "ease" / "result.json").read_text(encoding="utf-8"))
     for name in ("val_predictions.npy", "val_users.npy"):
         link(logs / "ease" / name, out / name)
-    # The dense 44.8k x 44.8k weight matrix (~8 GB) is not kept; refit from configs/ease.yaml.
+    # val_metrics come from the full dense matrix (~8 GB, not kept); checkpoint.npz is its top-k per item.
+    link(logs / "ease" / "model.npz", out / "checkpoint.npz")
     return {"val_metrics": result["val_metrics"], "best_epoch": None, "epochs_run": 0,
             "train_seconds": result["seconds"], "inference_ms_per_user": result["inference_latency_ms_per_user"],
-            "checkpoint": None, "config": result["config"]}
+            "checkpoint": "checkpoint.npz", "checkpoint_val_metrics": result["checkpoint_val_metrics"],
+            "config": result["config"]}
+
+
+def run_gfcf_model(density, folder):
+    from scripts import run_gfcf
+    run_gfcf.run(run_gfcf.parser().parse_args(["--sparsity", str(density), "--density-seed", "42", "--output", str(folder)]))
+
+
+def finish_gfcf(logs, out):
+    result = json.loads((logs / "gfcf" / "result.json").read_text(encoding="utf-8"))
+    for name in ("val_predictions.npy", "val_users.npy"):
+        link(logs / "gfcf" / name, out / name)
+    link(logs / "gfcf" / "model.npz", out / "checkpoint.npz")
+    return {"val_metrics": result["val_metrics"], "best_epoch": None, "epochs_run": 0,
+            "train_seconds": result["fit_report"]["seconds"], "inference_ms_per_user": result["inference_latency_ms_per_user"],
+            "checkpoint": "checkpoint.npz", "config": result["config"]}
 
 
 def run_sphr_model(density, seed, epochs, patience, device, folder):
@@ -199,6 +216,12 @@ def train_model(model, density, seed, epochs=200, patience=None, device="auto", 
                 shutil.rmtree(logs / "ease")  # an interrupted closed-form fit restarts from scratch
             run_ease_model(density, logs / "ease")
         summary = finish_ease(logs, out)
+    elif model == "gfcf":
+        if not (logs / "gfcf" / "result.json").exists():
+            if (logs / "gfcf").exists():
+                shutil.rmtree(logs / "gfcf")  # an interrupted closed-form fit restarts from scratch
+            run_gfcf_model(density, logs / "gfcf")
+        summary = finish_gfcf(logs, out)
     else:
         run_sphr_model(density, seed, epochs, patience, device, logs / "sphr")
         summary = finish_sphr(seed, logs, out)
@@ -219,7 +242,7 @@ def main(argv=None):
     parser.add_argument("--model", choices=MODELS, required=True)
     parser.add_argument("--density", type=float, choices=DENSITIES, default=1.0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--epochs", type=int, default=200, help="Epochs to train (ignored by the closed-form SGKR/EASE)")
+    parser.add_argument("--epochs", type=int, default=200, help="Epochs to train (ignored by the closed-form SGKR/EASE/GF-CF)")
     parser.add_argument("--patience", type=int, default=None,
                         help="SPHR early-stopping patience; default = --epochs (no early stopping). "
                              "Baselines read theirs from configs/common.yaml")

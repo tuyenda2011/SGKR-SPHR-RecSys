@@ -1,9 +1,10 @@
-"""Scoring back end of the demo app: load the five trained models of one density and rank items.
+"""Scoring back end of the demo app: load the trained models of one density and rank items.
 
 Reads only train + validation (scripts/validation_io.py) and the item metadata; never the test split.
 Rankings follow the Evaluator: candidates are the items of the density's training graph and the user's
-full-train history is masked, so a demo top-20 equals the run's stored val_predictions.npy row.
-SGKR and SPHR score any item history directly (no user table), which is what the "new user" tab shows.
+full-train history is masked, so a demo top-20 equals the run's stored val_predictions.npy row
+(except EASE, whose checkpoint keeps only the top-128 weights per item of the full matrix).
+SGKR, SPHR, EASE and GF-CF score any item history directly (no user table), which is what the "new user" tab shows.
 """
 from __future__ import annotations
 
@@ -19,10 +20,12 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[1]
 
-MODELS = ("sgkr", "sphr", "lightgcn", "xsimgcl", "directau")
+MODELS = ("sgkr", "sphr", "lightgcn", "xsimgcl", "directau", "ease", "gfcf")
 PROPOSED = ("sgkr", "sphr")
-LABELS = {"sgkr": "SGKR", "sphr": "SPHR", "lightgcn": "LightGCN", "xsimgcl": "XSimGCL", "directau": "DirectAU"}
-COLORS = {"sgkr": "#2a78d6", "sphr": "#eb6834", "lightgcn": "#1baf7a", "xsimgcl": "#eda100", "directau": "#e87ba4"}
+LABELS = {"sgkr": "SGKR", "sphr": "SPHR", "lightgcn": "LightGCN", "xsimgcl": "XSimGCL", "directau": "DirectAU",
+          "ease": "EASE (top-128)", "gfcf": "GF-CF"}
+COLORS = {"sgkr": "#2a78d6", "sphr": "#eb6834", "lightgcn": "#1baf7a", "xsimgcl": "#eda100", "directau": "#e87ba4",
+          "ease": "#7a5cc7", "gfcf": "#8c6d46"}
 DENSITIES = (1.0, 0.75, 0.5, 0.25)
 SEED = 42
 # DEMO_RESULTS points the demo at another results tree, e.g. results\preview (1-epoch checkpoints).
@@ -166,6 +169,39 @@ def sphr_ranker(model, candidates):
     return Ranker("sphr", candidates, users, history)
 
 
+def ease_ranker(weights, interactions, candidates):
+    """x @ B with the pruned EASE matrix; x is the user's history in this density's training graph."""
+    weights = weights.tocsr()
+
+    def users(ids):
+        return (interactions[ids] @ weights).toarray()
+
+    def history(items):
+        x = np.zeros(weights.shape[0])
+        x[items] = 1.
+        return weights.T @ x
+
+    def train_items(user):
+        return interactions[user].indices.astype(np.int64)
+
+    return Ranker("ease", candidates, users, history, train_items=train_items)
+
+
+def gfcf_ranker(model, candidates):
+    def users(ids):
+        return model.score(ids)
+
+    def history(items):
+        x = np.zeros((1, model.interactions.shape[1]))
+        x[0, items] = 1.
+        return model.score_rows(x)[0]
+
+    def train_items(user):
+        return model.interactions[user].indices.astype(np.int64)
+
+    return Ranker("gfcf", candidates, users, history, train_items=train_items)
+
+
 @torch.no_grad()
 def baseline_ranker(name, model, adjacency, candidates):
     user_table, item_table = model(adjacency)
@@ -187,11 +223,20 @@ def load_ranker(model, density, data, results=None):
     """The run's checkpoint at this density, or None when it has not been trained yet."""
     from src.data.sparsity import create_sparse_train_set
     folder = run_dir(model, density, results)
-    checkpoint = folder / ("checkpoint.npz" if model == "sgkr" else "checkpoint.pt")
+    checkpoint = folder / ("checkpoint.npz" if model in ("sgkr", "ease", "gfcf") else "checkpoint.pt")
     if not checkpoint.exists():
         return None
     train = create_sparse_train_set(data.full_train, density, SEED)
     candidates = candidate_mask(train, data.num_items)
+    if model == "gfcf":
+        from src.models.gfcf import GFCF
+        return gfcf_ranker(GFCF.load(checkpoint), candidates)
+    if model == "ease":
+        from scipy import sparse
+        from src.models.sgkr import SGKR
+        interactions = SGKR.interaction_matrix(train.u_idx.to_numpy(), train.i_idx.to_numpy(),
+                                               data.num_users, data.num_items)
+        return ease_ranker(sparse.load_npz(checkpoint), interactions, candidates)
     if model == "sgkr":
         from src.models.sgkr import SGKR
         return sgkr_ranker(SGKR.load(checkpoint), candidates)
