@@ -74,7 +74,8 @@ def prune_columns(weights, k, block=512):
     rows, columns, values = [], [], []
     for start in range(0, n, block):
         part = weights[:, start:start + block]
-        top = np.argpartition(-part, k, axis=0)[:k]
+        # Copy: a [:k] view would keep each block's full n x block int64 argpartition alive (n^2 x 8 bytes in all).
+        top = np.argpartition(-part, k, axis=0)[:k].copy()
         rows.append(top.ravel())
         columns.append(np.broadcast_to(np.arange(start, start + part.shape[1]), top.shape).ravel())
         values.append(np.take_along_axis(part, top, axis=0).ravel())
@@ -91,7 +92,9 @@ def run(args):
         weights = ease(run.x, config["l2"])  # raises MemoryError instead of shrinking the catalog
         fit_seconds = time.perf_counter() - started
         run.progress("fitted", fit_seconds=fit_seconds)
-        evaluator, predictions, latency, metrics = run.evaluate(ItemScores(run.x, weights).get_user_rating_scores,
+        # Same dtype as the weights: a float64 X @ float32 B makes scipy copy B to float64 (16 GB) every batch.
+        x = run.x.astype(weights.dtype)
+        evaluator, predictions, latency, metrics = run.evaluate(ItemScores(x, weights).get_user_rating_scores,
                                                                 args.eval_batch_size)
         run.save_predictions(evaluator, predictions)
         run.progress("evaluated_full_matrix", NDCG20=metrics["NDCG@20"])
@@ -103,7 +106,7 @@ def run(args):
             with open(temporary, "xb") as stream:  # a path without .npz would get the suffix appended
                 sparse.save_npz(stream, pruned)
         run.guard.atomic_write(run.output / "model.npz", save)
-        _, pruned_predictions, _, pruned_metrics = run.evaluate(ItemScores(run.x, pruned).get_user_rating_scores,
+        _, pruned_predictions, _, pruned_metrics = run.evaluate(ItemScores(x, pruned).get_user_rating_scores,
                                                                 args.eval_batch_size)
         run.progress("evaluated_checkpoint", NDCG20=pruned_metrics["NDCG@20"])
         overlap = float((pruned_predictions == predictions).float().mean())
