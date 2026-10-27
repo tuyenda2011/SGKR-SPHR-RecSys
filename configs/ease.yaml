@@ -1,0 +1,4 @@
+# EASE (extra baseline; Steck, WWW 2019): closed-form item-item ridge regression with zero diagonal.
+# Read by scripts/run_ease.py. One fixed configuration for every density (not tuned).
+# Exact solve on the full 44,843-item catalog: needs ~25 GB free RAM (run on Kaggle CPU, not locally).
+l2: 300.0   # ridge penalty (middle of the repo's EASE grid 100/300/1000)

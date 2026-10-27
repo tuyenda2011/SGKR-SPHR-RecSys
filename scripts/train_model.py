@@ -1,4 +1,4 @@
-"""Train one of the five reported models and file its outputs in one layout.
+"""Train one of the five reported models (or the extra EASE baseline) and file its outputs in one layout.
 
   python scripts/train_model.py --model xsimgcl --density 1.0 --seed 42 --epochs 200
 
@@ -31,7 +31,8 @@ import pandas as pd
 import torch
 
 BASELINES = ("lightgcn", "xsimgcl", "directau")
-MODELS = (*BASELINES, "sgkr", "sphr")
+CLOSED_FORM = ("sgkr", "ease")  # no epochs; ease (extra baseline) needs ~25 GB free RAM
+MODELS = (*BASELINES, "sgkr", "sphr", "ease")
 DENSITIES = (1.0, 0.75, 0.5, 0.25)
 
 
@@ -135,6 +136,21 @@ def finish_sgkr(logs, out):
             "checkpoint": "checkpoint.npz", "config": plan["config"]}
 
 
+def run_ease_model(density, folder):
+    from scripts import run_ease
+    run_ease.run(run_ease.parser().parse_args(["--sparsity", str(density), "--density-seed", "42", "--output", str(folder)]))
+
+
+def finish_ease(logs, out):
+    result = json.loads((logs / "ease" / "result.json").read_text(encoding="utf-8"))
+    for name in ("val_predictions.npy", "val_users.npy"):
+        link(logs / "ease" / name, out / name)
+    # The dense 44.8k x 44.8k weight matrix (~8 GB) is not kept; refit from configs/ease.yaml.
+    return {"val_metrics": result["val_metrics"], "best_epoch": None, "epochs_run": 0,
+            "train_seconds": result["seconds"], "inference_ms_per_user": result["inference_latency_ms_per_user"],
+            "checkpoint": None, "config": result["config"]}
+
+
 def run_sphr_model(density, seed, epochs, patience, device, folder):
     from scripts import tune_sphr
     args = tune_sphr.make_parser().parse_args(["--output", str(folder), "--sparsity", str(density), "--seed", str(seed),
@@ -177,11 +193,17 @@ def train_model(model, density, seed, epochs=200, patience=None, device="auto", 
                 shutil.rmtree(logs / "sgkr")  # an interrupted closed-form fit restarts from scratch
             run_sgkr_model(density, logs / "sgkr")
         summary = finish_sgkr(logs, out)
+    elif model == "ease":
+        if not (logs / "ease" / "result.json").exists():
+            if (logs / "ease").exists():
+                shutil.rmtree(logs / "ease")  # an interrupted closed-form fit restarts from scratch
+            run_ease_model(density, logs / "ease")
+        summary = finish_ease(logs, out)
     else:
         run_sphr_model(density, seed, epochs, patience, device, logs / "sphr")
         summary = finish_sphr(seed, logs, out)
     metrics = {"model": model, "density": density, "seed": seed, "split": "validation",
-               "max_epochs": None if model == "sgkr" else epochs, **summary, "env": environment()}
+               "max_epochs": None if model in CLOSED_FORM else epochs, **summary, "env": environment()}
     users, predictions = np.load(out / "val_users.npy"), np.load(out / "val_predictions.npy")
     if predictions.shape != (len(users), 20):
         raise AssertionError("Unexpected validation prediction shape")
@@ -197,7 +219,7 @@ def main(argv=None):
     parser.add_argument("--model", choices=MODELS, required=True)
     parser.add_argument("--density", type=float, choices=DENSITIES, default=1.0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--epochs", type=int, default=200, help="Epochs to train (ignored by the closed-form SGKR)")
+    parser.add_argument("--epochs", type=int, default=200, help="Epochs to train (ignored by the closed-form SGKR/EASE)")
     parser.add_argument("--patience", type=int, default=None,
                         help="SPHR early-stopping patience; default = --epochs (no early stopping). "
                              "Baselines read theirs from configs/common.yaml")
