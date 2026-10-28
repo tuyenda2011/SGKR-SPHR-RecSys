@@ -1,0 +1,351 @@
+% !TEX program = xelatex
+\documentclass[12pt,a4paper]{article}
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+\usepackage{caption}
+\captionsetup[table]{position=bottom}
+\captionsetup[figure]{position=bottom}
+\usepackage{float}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\refname}{TÀI LIỆU THAM KHẢO}
+\usepackage{tocloft,calc}
+\usepackage[top=3.5cm, bottom=3.0cm, left=3.5cm, right=2.0cm]{geometry} % căn lề theo quy chuẩn KLTN
+\usepackage{amsmath,latexsym,amscd,amsfonts,mathrsfs,enumerate} \usepackage{ upgreek }
+\usepackage[thref,thmmarks,standard,amsmath,hyperref]{ntheorem}
+\usepackage[mathscr]{eucal}
+\usepackage[unicode,colorlinks=true, bookmarks=true, pdfstartview=FitH,]{hyperref} %pagebackref=true,
+\hypersetup{
+pdftitle={},
+pdfauthor={Đặng Anh Tuyền;},
+colorlinks = true,
+linkcolor = black,
+citecolor = blue,
+urlcolor = blue,
+}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{fancybox,cite}
+\usepackage{subcaption}
+\usepackage[ruled,linesnumbered,noline,longend]{algorithm2e}
+\SetAlCapFnt{\bfseries}
+\SetAlCapNameFnt{\bfseries}
+\SetAlgorithmName{Thuật toán}{thuật toán}{Danh sách thuật toán}
+\SetKwInput{KwIn}{Đầu vào}
+\SetKwInput{KwOut}{Đầu ra}
+\SetKwFor{For}{với}{thực hiện}{kết thúc}
+\SetKwFor{ForEach}{với mỗi}{thực hiện}{kết thúc}
+\SetKwFor{While}{trong khi}{thực hiện}{kết thúc}
+\SetKwIF{If}{ElseIf}{Else}{nếu}{thì}{ngược lại nếu}{ngược lại}{kết thúc}
+%\usepackage{refcheck}
+ 
+\allowdisplaybreaks
+%Môi trường định nghĩa
+\theoremheaderfont{\bfseries} % In ra chữ "định nghĩa": đậm, thẳng đứng.
+\theorembodyfont{} % Nội dung của định nghia được viết bằng chữ thẳng đứng.
+\theoremseparator {}         % Ngăn cách giữa định nghĩa và nội dung định nghĩa bởi dấu chấm.
+\newtheorem{dn}{Định nghĩa}[section] % Lệnh này để trong file kết quả in ra chữ nhận xét thay vì nếu ta để mặc định.
+
+%Môi trường Ví dụ
+\theoremheaderfont{\bfseries} % In ra chữ "Ví dụ": đậm, thẳng đứng.
+\theorembodyfont{\normalfont} % Nội dung của ví dụ được viết bằng chữ thẳng đứng.
+\theoremseparator {.}         % Ngăn cách giữa Ví dụ và nội dung ví dụ bởi dấu chấm.
+\newtheorem{vd}{Ví dụ}[section] % Lệnh này để trong file kết quả in ra chữ Ví dụ thay vì Example nếu ta để mặc định.
+
+%Môi trường Chú ý
+\theoremstyle{plain} %Không đánh sỗ chú ý
+\theoremheaderfont{\bfseries} % In ra chữ "chú ý": đậm, thẳng đứng.
+\theorembodyfont{\normalfont} % Nội dung của chú ý được viết bằng chữ thẳng đứng.
+\theoremseparator {}         % Ngăn cách giữa "chú ý" và nội dung chú ý bởi dấu chấm.
+\newtheorem{cy}{Chú ý} % Lệnh này để trong file kết quả in ra chữ "chú ý" thay vì remark nếu ta để mặc định.
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{fvextra}
+\usepackage{enumitem}
+\setlist{itemsep=3pt,topsep=5pt,parsep=0pt}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{tikz}
+\usepackage{xurl}
+
+\Urlmuskip=0mu plus 1mu
+\emergencystretch=3em
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+% Kiểu dùng chung cho các sơ đồ vector ở Chương 3.
+\tikzset{
+    chthreeflow/.style={-{Latex[length=2.5mm,width=1.7mm]}, line width=0.9pt, draw=blue!35!black, shorten <=2pt, shorten >=2pt},
+    chthreedash/.style={-{Latex[length=2.3mm,width=1.5mm]}, line width=0.85pt, dashed, draw=blue!55!black, shorten <=2pt, shorten >=2pt},
+    chthreeblue/.style={draw=blue!70!black, fill=blue!4, rounded corners=5pt, line width=0.8pt, align=center, inner sep=6pt},
+    chthreegreen/.style={draw=green!55!black, fill=green!5, rounded corners=5pt, line width=0.8pt, align=center, inner sep=6pt},
+    chthreepurple/.style={draw=violet!70!black, fill=violet!5, rounded corners=5pt, line width=0.8pt, align=center, inner sep=6pt},
+    chthreeorange/.style={draw=orange!80!black, fill=orange!6, rounded corners=5pt, line width=0.8pt, align=center, inner sep=6pt}
+}
+
+% Hiển thị các số phương trình được dẫn lại bằng màu xanh.
+\renewcommand{\eqref}[1]{%
+    \hyperref[#1]{\textcolor{blue}{\textup{(\ref*{#1})}}}%
+}
+
+% Hiển thị số hình được dẫn lại bằng màu xanh, giữ chữ "Hình" màu đen.
+\newcommand{\figref}[1]{%
+    Hình~\hyperref[#1]{\textcolor{blue}{\ref*{#1}}}%
+}
+
+% Hiển thị số bảng được dẫn lại bằng màu xanh, giữ chữ "Bảng" màu đen.
+\newcommand{\tabref}[1]{%
+    Bảng~\hyperref[#1]{\textcolor{blue}{\ref*{#1}}}%
+}
+
+%Môi trường Bài tập
+\theoremheaderfont{\bfseries} % In ra chữ "chú ý": đậm, thẳng đứng.
+\theorembodyfont{\normalfont} % Nội dung của chú ý được viết bằng chữ thẳng đứng.
+\theoremseparator {}         % Ngăn cách giữa "chú ý" và nội dung chú ý bởi dấu chấm.\newtheorem{bt}{Bài tập} % Lệnh này để trong file kết quả in ra chữ "chú ý" thay vì  remark nếu ta để mặc định.
+
+%Môi trường nhân xét
+\theoremheaderfont{\bfseries} % In ra chữ "Nhân xét": đậm, thẳng đứng.
+\theorembodyfont{\normalfont} % Nội dung của nhạn xét được viết bằng chữ thẳng đứng.
+\theoremseparator {}         % Ngăn cách giữa nhận xét và nội dung nhận xét bởi dấu chấm.
+\newtheorem{nx}{Nhận xét}[section] % Lệnh này để trong file kết quả in ra chữ nhận xét thay vì nếu ta để mặc định.
+
+%Môi trường định lý
+\theoremstyle{plain} %Sử dụng phong cách plain để đánh số Định lý, chẳng hạn: Định lý 1, Định lý 2,...
+\theoremheaderfont{\normalfont\bfseries} % In ra chữ "Định lý": đậm, thẳng đứng.
+\theorembodyfont{\normalfont} % Nội dung của Định lý được viết bằng chữ nghiêng.
+\theoremseparator {.}         % Ngăn cách giữa Định lý và nội dung định lý bởi dấu chấm.
+\renewtheorem{theorem}{Định lý} % Lệnh này để trong file kết quả in ra chữ Định lý thay vì theorem nếu ta để mặc định.
+%Môi trường Mệnh đề
+\theoremstyle{plain} %Sử dụng phong cách plain để đánh số Mệnh đề, chẳng hạn: Mệnh đề 1, Mệnh đề 2,...
+\theoremheaderfont{\normalfont\bfseries} % In ra chữ "Mệnh đề": đậm, thẳng đứng.
+\theorembodyfont{\normalfont} % Nội dung của Mệnh đề được viết bằng chữ thẳng đứng.
+\theoremseparator {.}         % Ngăn cách giữa Mệnh đề và nội dung mệnh đề bởi dấu chấm.
+\renewtheorem{proposition}{Mệnh đề} % Lệnh này để trong file kết quả in ra chữ Mệnh đề thay vì proposition nếu ta để mặc định.
+%Môi trường Chứng minh
+\theoremstyle{nonumberplain}  % Kiểu định dạng dành cho chứng minh
+\theoremheaderfont{\normalfont\bfseries} % Tiêu đề "Chứng minh" in nghiêng
+\theorembodyfont{\normalfont}
+\theoremseparator{.} 
+\theoremsymbol{\ensuremath{\square}} % Dấu kết thúc chứng minh là ô vuông
+\newtheorem{cm}{Chứng minh}[section]
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\itshape Thuật toán ứng dụng 1-1-26(N01)}
+\fancyfoot[L]{\fontsize{9}{11}\selectfont\itshape Tối ưu hóa đa mục tiêu quy trình lấy hàng trong kho hàng}
+\fancyfoot[R]{\fontsize{9}{11}\selectfont\thepage}
+\setlength{\headheight}{16pt}
+\renewcommand{\headrulewidth}{1.2pt}
+\renewcommand{\footrulewidth}{1.2pt} % Tiêu đề chân trang
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyhead[L]{\itshape Thuật toán ứng dụng 1-1-26(N01)}
+    \fancyfoot[L]{\fontsize{9}{11}\selectfont\itshape Tối ưu hóa đa mục tiêu quy trình lấy hàng trong kho hàng}
+    \fancyfoot[R]{\fontsize{9}{11}\selectfont\thepage}
+    \renewcommand{\headrulewidth}{1.2pt}
+    \renewcommand{\footrulewidth}{1.2pt}
+}
+
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+
+\begin{document}
+\newcommand{\mapsBzero}{25,33}
+\newcommand{\mapsBtwo}{13,40}
+\newcommand{\mapsLNS}{-0,02}
+\newcommand{\mapsVNS}{-2,02}
+\newcommand{\scalabilityBzero}{27,40}
+\newcommand{\scalabilityBtwo}{6,58}
+\newcommand{\scalabilityLNS}{0,14}
+\newcommand{\scalabilityVNS}{-2,25}
+\newcommand{\krisBzero}{17,68}
+\newcommand{\krisBtwo}{9,18}
+\newcommand{\krisLNS}{0,07}
+\newcommand{\krisVNS}{0,01}
+ \fontsize{13pt}{18pt}\selectfont
+ \hypersetup{pageanchor=false}
+ 
+ \thisfancypage{\setlength{\fboxsep}{0.2cm}\setlength{\fboxrule}{1pt}\doublebox}{}
+ \begin{titlepage}
+\begin{center}
+	\large
+	BỘ GIÁO DỤC VÀ ĐÀO TẠO\\
+	\textbf{ĐẠI HỌC PHENIKAA}\\
+	\textbf{TRƯỜNG CÔNG NGHỆ THÔNG TIN}\\[0.15cm]
+	\rule{3.2cm}{0.4pt}\,o0o\,\rule{3.2cm}{0.4pt}
+\end{center}
+\vspace{-0.5cm}
+\begin{center}
+    \includegraphics[scale=0.8]{image/Logo.png}\\[1cm] 
+\end{center} 
+\vspace{0.3 cm}
+\begin{center}
+    \bf\Large {BÁO CÁO BÀI TẬP LỚN}
+\end{center}
+\begin{center}
+    \bf\large {HỌC PHẦN: THUẬT TOÁN ỨNG DỤNG 1-1-26(N01)}
+\end{center}
+\vspace{0.3 cm}
+\begin{center}
+	\bf\large ĐỀ TÀI: TỐI ƯU HÓA ĐA MỤC TIÊU QUY TRÌNH LẤY HÀNG TRONG KHO HÀNG
+\end{center}
+\begin{center}
+	\normalsize
+	\renewcommand{\arraystretch}{1.15}
+	\begin{tabular}{@{}p{5.2cm}l@{}}
+        \textbf{Đặng Anh Tuyền} & \textbf{MSSV:} 23010912 \\
+                                & \textbf{Lớp:} K17-KHMT(AI\&KHDL)\_1 \\[0.25cm]
+        \textbf{Phạm Văn Sự} & \textbf{MSSV:} 23010523 \\
+                                & \textbf{Lớp:} K17-KHMT(AI\&KHDL)\_1
+	\end{tabular}
+\end{center}
+
+\vskip 0.8 cm
+  \begin{center}
+   GVHD: TS. Trần Đình Tân
+  \end{center}
+\vskip 0.5 cm
+  \begin{center}
+   {\large\textbf{Hà Nội, Năm 2026}}
+  \end{center}
+ \end{titlepage}
+
+% Bìa lót: bố cục học thuật theo mẫu, có khung đôi và không sử dụng logo.
+\begin{titlepage}
+\thispagestyle{empty}
+\thisfancypage{\setlength{\fboxsep}{0.2cm}\setlength{\fboxrule}{1pt}\doublebox}{}
+\begin{center}
+	\large
+	BỘ GIÁO DỤC VÀ ĐÀO TẠO\\
+	\textbf{ĐẠI HỌC PHENIKAA}\\
+	\textbf{TRƯỜNG CÔNG NGHỆ THÔNG TIN}\\[0.15cm]
+	\rule{4cm}{0.4pt}\,o0o\,\rule{4cm}{0.4pt}
+\end{center}
+\vspace{1.5cm}
+\begin{center}
+	\normalsize
+	\renewcommand{\arraystretch}{1.15}
+	\begin{tabular}{@{}p{5.2cm}l@{}}
+        \textbf{Đặng Anh Tuyền} & \textbf{MSSV:} 23010912 \\
+                                & \textbf{Lớp:} K17-KHMT(AI\&KHDL)\_1 \\[0.25cm]
+        \textbf{Phạm Văn Sự} & \textbf{MSSV:} 23010523 \\
+                                & \textbf{Lớp:} K17-KHMT(AI\&KHDL)\_1 \\[0.25cm]
+	\end{tabular}
+\end{center}
+\vspace{1.3cm}
+\begin{center}
+    \bf\Large {BÁO CÁO BÀI TẬP LỚN}
+\end{center}
+\begin{center}
+    \bf\large {HỌC PHẦN:  1-1-26(N01)}
+\end{center}
+\vspace{0.65cm}
+\begin{center}
+	\bf\Large 
+\end{center}
+\vfill
+\begin{center}
+    GVHD: TS. Trần Đình Tân
+\end{center}
+\vfill
+\begin{center}
+    {\large\textbf{Hà Nội, Năm 2026}}
+\end{center}
+\vspace{0.25cm}
+\end{titlepage}
+
+% Bảng phân chia công việc của nhóm.
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{center}
+    {\bfseries\Large BẢNG PHÂN CHIA CÔNG VIỆC}
+\end{center}
+\vspace{0.45cm}
+
+\begingroup
+\fontsize{10.5pt}{12.5pt}\selectfont
+\setlength{\tabcolsep}{3.5pt}
+\setlength{\arrayrulewidth}{0.7pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{center}
+\begin{tabularx}{\textwidth}{|
+    >{\centering\arraybackslash}m{0.8cm}|
+    >{\centering\arraybackslash}m{3.5cm}|
+    >{\centering\arraybackslash}m{1.75cm}|
+    >{\raggedright\arraybackslash}X|
+    >{\centering\arraybackslash}m{1.45cm}|}
+\hline
+\textbf{STT} & \centering\textbf{Họ và tên} & \textbf{Vai trò} & \centering\textbf{Nội dung công việc} & \textbf{Tỷ lệ} \\
+\hline
+1 & \makecell[c]{Đặng Anh Tuyền} & \textbf{Trưởng nhóm} &
+-- Lập kế hoạch, phân công và theo dõi tiến độ chung.\newline
+-- Thiết kế mô hình bài toán và cấu trúc dữ liệu đồ thị kho.\newline
+-- Cài đặt, kiểm tra các thuật toán LNS và ALNS.\newline
+-- Xây dựng bộ sinh dữ liệu và cấu hình các kịch bản kho mô phỏng.\newline
+-- Phát triển giao diện Streamlit và mô phỏng động Canvas.\newline
+-- Viết phần mô hình, thuật toán tìm kiếm và tích hợp báo cáo. & \textbf{50\%} \\
+\hline
+2 & \makecell[c]{Phạm Văn Sự} & Thành viên &
+-- Tổng hợp cơ sở lý thuyết và các nghiên cứu liên quan.\newline
+-- Cài đặt, kiểm tra các thuật toán B0, B2 và VNS.\newline
+-- Chuẩn bị dữ liệu Kris và tổ chức các lượt chạy benchmark.\newline
+-- Kiểm chứng nghiệm, tổng hợp số liệu và vẽ biểu đồ so sánh.\newline
+-- Phân tích kết quả, độ ổn định và các khảo sát bổ sung.\newline
+-- Viết phần tổng quan, thực nghiệm, kết luận và rà soát LaTeX. & \textbf{50\%} \\
+\hline
+\end{tabularx}
+\end{center}
+\endgroup
+
+\vspace{0.55cm}
+\begin{center}
+    {\fontsize{13pt}{16pt}\selectfont
+    \textbf{Repository dự án:}\quad
+    \href{https://github.com/tuyenda2011/SGKR-SPHR-RecSys}{\texttt{github.com/tuyenda2011/SGKR-SPHR-RecSys}}}
+\end{center}
+\end{titlepage}
+
+\pagestyle{fancy}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\hypersetup{pageanchor=true,linkcolor=black}
+
+
+
+% Chèn mục lục
+\renewcommand{\contentsname}{Mục lục}
+\tableofcontents
+
+% Ngắt trang tại đây để chuyển Danh mục hình ảnh sang trang mới
+\newpage 
+%\clearpage % (Bạn cũng có thể dùng \clearpage thay cho \newpage)
+
+% Chèn danh mục hình ảnh
+\renewcommand{\listfigurename}{Danh sách hình ảnh}
+\listoffigures
+
+% Chèn danh mục bảng
+\clearpage
+\renewcommand{\listtablename}{Danh sách bảng}
+\listoftables
+
+% Ngắt trang để phần nội dung bài viết bắt đầu ở trang mới
+\clearpage
+\input{section/section1}
+\clearpage
+\input{section/section2}
+\clearpage
+\input{section/section3}
+\clearpage
+\input{section/section4}
+\clearpage
+\input{section/section5}
+\clearpage
+\phantomsection
+\addcontentsline{toc}{section}{TÀI LIỆU THAM KHẢO}
+\input{section/ref}
+
+\end{document}

@@ -109,3 +109,20 @@ task_codex/
 research_20261025/
 third_party/
 RecFlow/
+
+# LaTeX/MiKTeX build files of the report (the .tex sources and images stay tracked)
+report/**/*.aux
+report/**/*.out
+report/**/*.thm
+report/**/*.toc
+report/**/*.lof
+report/**/*.lot
+report/**/*.synctex.gz
+report/**/*.synctex(busy)
+report/**/*.fls
+report/**/*.fdb_latexmk
+report/**/*.xdv
+report/**/*.bbl
+report/**/*.blg
+report/**/*.nav
+report/**/*.snm
