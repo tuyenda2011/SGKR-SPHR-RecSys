@@ -3,10 +3,10 @@
   streamlit run app/streamlit_app.py
 
 Laid out for a 1920x1080 desktop. Three tabs:
-  Khách hàng có sẵn   the top-10 of all seven models side by side (one column each, grouped by family) next to the
+  Gợi ý cho khách     the top-10 of all seven models side by side (one column each, grouped by family) next to the
                       customer's history and next purchase; hovering a product lights it up in every column.
-  Khách hàng mới      the same grid for a history built from a product search (graph baselines cannot serve it).
-  Benchmark học thuật  key findings, leaderboard, charts, paired tests against SGKR, protocol and report figures.
+  Khách mới           the same grid for a history built from a product search (graph baselines cannot serve it).
+  Đánh giá mô hình    key findings, leaderboard, charts, paired tests against SGKR, protocol and report figures.
 Validation data only; the test split is never opened.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from app.benchmark import METRICS, by_density, leaderboard, significance
+from app.benchmark import METRICS, by_density, closed_form, closed_form_all, leaderboard, significance
 from app.recommender import (COLORS, DENSITIES, FAMILY_COLORS, GROUPS, KINDS, LABELS, MODELS, PREVIEW, RESULTS,
                              checkpoint_ndcg, load_data, load_ranker, recommend, sample_users)
 
@@ -170,7 +170,7 @@ def view_options(key):
 
 
 def display_popover():
-    with st.popover("Hiển thị", icon=":material/tune:", use_container_width=True):
+    with st.popover("Hiển thị", icon=":material/tune:", width="stretch"):
         hide = st.toggle("Ẩn sản phẩm không rõ tên", value=True, key="hide",
                          help="Chỉ lọc phần hiển thị. Tắt để top-10 trùng đúng với lúc đánh giá.")
         st.markdown(f'<div class="legend"><span><i class="hitkey">{CHECK}</i>Trúng sản phẩm mua tiếp theo</span>'
@@ -280,10 +280,10 @@ def tab_existing(data, samples, eligible):
         st.session_state.user = st.session_state.user_pick
     pick.selectbox("Khách hàng", options, index=options.index(user), key="user_pick", on_change=chosen,
                    label_visibility="collapsed", format_func=lambda u: f"Khách {u} · {len(data.history[u])} sản phẩm")
-    if shuffle.button("Ngẫu nhiên", icon=":material/shuffle:", use_container_width=True):
+    if shuffle.button("Ngẫu nhiên", icon=":material/shuffle:", width="stretch"):
         st.session_state.user = int(np.random.default_rng().choice(eligible))
         st.rerun()
-    dens_label.markdown("<div style='text-align:right;font-size:14px;color:#3a4052'>Mật độ</div>",
+    dens_label.markdown("<div style='text-align:right;font-size:14px;color:#3a4052;margin-top:-14px'>Mật độ</div>",
                         unsafe_allow_html=True)
     with dens:
         density = density_radio("density", collapsed=True)
@@ -347,7 +347,7 @@ def tab_new(data):
             if action.button("✕", key=f"del{item}", help="Bỏ sản phẩm này"):
                 picked.remove(item)
                 st.rerun()
-        if st.button("Gợi ý ngay", type="primary", use_container_width=True, disabled=not picked):
+        if st.button("Gợi ý ngay", type="primary", width="stretch", disabled=not picked):
             st.session_state.asked = list(picked)
     with right:
         asked = st.session_state.get("asked")
@@ -368,35 +368,52 @@ def tab_new(data):
 
 # ---------- tab 3: benchmark ----------
 
+MAIN_MODELS = ("sgkr", "sphr", "lightgcn", "xsimgcl", "directau")
+GREEN, AMBER, RED = ("background-color:#e6f5ee;color:#13865d;font-weight:600",
+                     "background-color:#fff8e6;color:#8a6d00;font-weight:600",
+                     "background-color:#fdecea;color:#c0392b;font-weight:600")
+
+
+def verdict_style(verdict):
+    if verdict.startswith(("SGKR", "SPHR")):
+        return GREEN
+    return AMBER if verdict.startswith("Chưa") else RED
+
+
 @st.cache_data(show_spinner="Đang chạy paired bootstrap 10.000 lần cho từng cặp…")
 def cached_significance(density):
     return significance(density, get_data()[0].target)
 
 
-def findings(table, tests, density):
-    """Three plain-language conclusions computed from the leaderboard and the tests."""
+def finding(color, text):
+    st.markdown(f'<div class="finding" style="border-left-color:{color}">{text}</div>', unsafe_allow_html=True)
+
+
+def findings_main(table, tests, density):
+    """Plain-language conclusions of the main comparison (five models, tests as report B3)."""
     best = table.iloc[0]
-    items = [(COLORS[best.model], f"<b>{best['Mô hình']}</b> có NDCG@20 cao nhất ở mật độ {density:.0%}: "
-                                  f"<b>{best['NDCG@20']:.4f}</b>.")]
-    if not tests.empty:
-        better = tests[tests.p_holm < .05]
-        ties = tests[(tests.p_holm >= .05) & (tests.verdict != "Mô hình này tốt hơn")]
-        worse = tests[tests.verdict == "Mô hình này tốt hơn"]
-        text = f"SGKR tốt hơn có ý nghĩa thống kê <b>{len(better)}/{len(tests)}</b> mô hình (p Holm &lt; 0,05)"
+    finding(COLORS[best.model], f"<b>{best['Mô hình']}</b> có NDCG@20 cao nhất ở mật độ {density:.0%}: "
+                                f"<b>{best['NDCG@20']:.4f}</b>.")
+    for proposed in ("sgkr", "sphr"):
+        rows = tests[tests.proposed == proposed] if not tests.empty else tests
+        if rows.empty:
+            continue
+        wins = rows[rows.p_holm < .05]
+        ties = rows[(rows.p_holm >= .05) & rows.ci95.map(lambda c: c[1] >= 0)]
+        text = (f"{LABELS[proposed]} tốt hơn có ý nghĩa thống kê <b>{len(wins)}/{len(rows)}</b> baseline GNN "
+                f"(p Holm &lt; 0,05)")
+        worse = rows[rows.ci95.map(lambda c: c[1] < 0)]  # whole 95% interval below zero
         if len(ties):
-            text += "; chưa khác biệt có ý nghĩa với " + ", ".join(f"<b>{plain_label(m)}</b>" for m in ties.model)
+            text += "; chưa khác biệt có ý nghĩa với " + ", ".join(f"<b>{LABELS[m]}</b>" for m in ties.baseline)
         if len(worse):
-            text += "; kém hơn " + ", ".join(f"<b>{plain_label(m)}</b>" for m in worse.model)
-        items.append((COLORS["sgkr"], text + "."))
-    sgkr = table[table.model == "sgkr"]
-    gnn = table[table.model.isin(["lightgcn", "xsimgcl", "directau"])]
+            text += "; kém hơn " + ", ".join(f"<b>{LABELS[m]}</b>" for m in worse.baseline)
+        finding(COLORS[proposed], text + ".")
+    sgkr, gnn = table[table.model == "sgkr"], table[table.model.isin(["lightgcn", "xsimgcl", "directau"])]
     if len(sgkr) and len(gnn):
         fastest = gnn.train_seconds.min()
-        items.append(("#13865d", f"SGKR train trong <b>{sgkr.train_seconds.iloc[0] / 60:.1f} phút</b>, nhanh hơn "
-                                 f"khoảng <b>{fastest / sgkr.train_seconds.iloc[0]:.0f}×</b> so với GNN nhanh nhất "
-                                 f"({fastest / 60:.0f} phút), và gợi ý được cho khách mới."))
-    for color, text in items:
-        st.markdown(f'<div class="finding" style="border-left-color:{color}">{text}</div>', unsafe_allow_html=True)
+        finding("#13865d", f"SGKR train trong <b>{sgkr.train_seconds.iloc[0] / 60:.1f} phút</b>, nhanh hơn khoảng "
+                           f"<b>{fastest / sgkr.train_seconds.iloc[0]:.0f}×</b> so với GNN nhanh nhất "
+                           f"({fastest / 60:.0f} phút), và gợi ý được cho khách mới.")
 
 
 def leaderboard_view(table):
@@ -412,18 +429,18 @@ def leaderboard_view(table):
               .map(lambda v: "color:#13865d" if v > 0 else "color:#c0392b" if v < 0 else "",
                    subset=["NDCG@20 so với SGKR (%)"])
               .apply(lambda row: ["background-color:#e8f0fc" if row["Mô hình"] == "SGKR" else ""] * len(row), axis=1))
-    st.dataframe(styler, hide_index=True, use_container_width=True)
-    st.caption("Tô xanh: cao nhất cột. Thời gian train: GNN chạy GPU, còn lại CPU.")
+    st.dataframe(styler, hide_index=True, width="stretch")
+    st.caption("Như bảng B2 của báo cáo. Tô xanh: cao nhất cột. Thời gian train: SGKR chạy CPU, các mô hình khác GPU.")
 
 
 def charts(density, metric):
     frame = by_density()
     frame["Mô hình"] = frame.model.map(plain_label)
-    colors = alt.Scale(domain=[plain_label(m) for m in MODELS], range=[COLORS[m] for m in MODELS])
+    colors = alt.Scale(domain=[plain_label(m) for m in MAIN_MODELS], range=[COLORS[m] for m in MAIN_MODELS])
     lines = (alt.Chart(frame).mark_line(point=True, strokeWidth=2.5)
              .encode(x=alt.X("density:Q", title="Mật độ dữ liệu train", axis=alt.Axis(format="%", values=list(DENSITIES))),
                      y=alt.Y(f"{metric}:Q", title=metric),
-                     color=alt.Color("Mô hình:N", scale=colors, legend=alt.Legend(orient="bottom", columns=7)),
+                     color=alt.Color("Mô hình:N", scale=colors, legend=alt.Legend(orient="bottom", columns=5)),
                      tooltip=["Mô hình", alt.Tooltip("density:Q", format="%"), alt.Tooltip(f"{metric}:Q", format=".4f")])
              .properties(title=f"{metric} theo mật độ", height=380))
     current = frame[frame.density == density].assign(minutes=lambda f: f.train_seconds / 60)
@@ -435,8 +452,8 @@ def charts(density, metric):
                .properties(title=f"Chất lượng và chi phí · mật độ {density:.0%}", height=380))
     labels = scatter.mark_text(align="left", dx=10, fontSize=12).encode(text="Mô hình:N")
     left, right = st.columns(2, gap="large")
-    left.altair_chart(lines, use_container_width=True)
-    right.altair_chart(scatter + labels, use_container_width=True)
+    left.altair_chart(lines, width="stretch")
+    right.altair_chart(scatter + labels, width="stretch")
 
 
 def significance_view(tests):
@@ -444,70 +461,160 @@ def significance_view(tests):
         st.caption("Chưa đủ dự đoán validation để kiểm định ở mật độ này.")
         return
     view = pd.DataFrame({
-        "So sánh": "SGKR − " + tests.model.map(plain_label), "Hiệu NDCG@20": tests.delta,
+        "So sánh": tests.proposed.map(LABELS) + " − " + tests.baseline.map(LABELS), "Hiệu NDCG@20": tests.delta,
         "KTC 95%": [f"[{low:+.4f}, {high:+.4f}]" for low, high in tests.ci95],
         "p một phía": tests.p_one_sided, "p Holm": tests.p_holm, "Kết luận": tests.verdict, "Số user": tests.n_users})
-    verdict = {"SGKR tốt hơn": "background-color:#e6f5ee;color:#13865d;font-weight:600",
-               "Chưa khác biệt có ý nghĩa": "background-color:#fff8e6;color:#8a6d00;font-weight:600",
-               "Mô hình này tốt hơn": "background-color:#fdecea;color:#c0392b;font-weight:600"}
     st.dataframe(view.style.format({"Hiệu NDCG@20": "{:+.5f}", "p một phía": "{:.4f}", "p Holm": "{:.4f}"})
-                 .map(lambda v: verdict.get(v, ""), subset=["Kết luận"]),
-                 hide_index=True, use_container_width=True)
-    st.caption("Paired bootstrap 10.000 lần, một phía (SGKR > mô hình kia), hiệu chỉnh Holm; như bảng B3 của báo cáo.")
+                 .map(verdict_style, subset=["Kết luận"]), hide_index=True, width="stretch")
+    st.caption("Như bảng B3: paired bootstrap 10.000 lần, một phía (mô hình đề xuất tốt hơn), Holm trên 6 so sánh.")
 
 
-def figure_gallery(metric):
+CLOSED_COLORS = {"SGKR (đề xuất)": COLORS["sgkr"], "EASE (đầy đủ)": COLORS["ease"], "EASE top-128": "#b39ae6",
+                 "GF-CF": COLORS["gfcf"]}
+CLOSED_METRICS = ["NDCG@20", "NDCG@10", "Recall@20", "Recall@10"]  # B5 has no MRR
+
+
+def closed_form_overview(b5, b6, density):
+    """Conclusions and table B5 of the closed-form part at this density."""
+    rivals = dict(zip(b6["So sánh"].str.replace("SGKR - ", "", regex=False), b6["Kết luận"]))
+    phrases = (("SGKR tốt hơn", "SGKR tốt hơn có ý nghĩa so với"),
+               ("Chưa khác biệt có ý nghĩa", "chưa khác biệt có ý nghĩa với"), ("Mô hình này tốt hơn", "kém hơn"))
+    parts = [label + " " + ", ".join(f"<b>{name}</b>" for name, v in rivals.items() if v == verdict)
+             for verdict, label in phrases if verdict in rivals.values()]
+    text = "; ".join(parts)
+    finding(COLORS["sgkr"], text[:1].upper() + text[1:] + " (Holm, p &lt; 0,05).")
+    size = dict(zip(b5["Mô hình"], b5["Checkpoint (MB)"]))
+    minutes = dict(zip(b5["Mô hình"], b5["Train (phút)"]))
+    finding("#13865d", f"Checkpoint: SGKR <b>{size['SGKR (đề xuất)']:.1f} MB</b> · EASE top-128 "
+                       f"<b>{size['EASE top-128']:.1f} MB</b> · EASE đầy đủ cần <b>{size['EASE (đầy đủ)'] / 1024:.1f} GB"
+                       f"</b> (không lưu được). Train: SGKR {minutes['SGKR (đề xuất)']:.1f} phút, EASE "
+                       f"{minutes['EASE (đầy đủ)']:.1f} phút.")
+    metrics = CLOSED_METRICS
+    st.markdown(f"##### Bảng xếp hạng · mật độ {density:.0%}")
+    st.dataframe(b5.sort_values("NDCG@20", ascending=False)[["Mô hình", *metrics, "Checkpoint (MB)", "Train (phút)"]]
+                 .style.format({**{m: "{:.4f}" for m in metrics}, "Checkpoint (MB)": "{:,.1f}",
+                                "Train (phút)": "{:.1f}"})
+                 .highlight_max(subset=metrics, props="font-weight:700; background-color:#e6f5ee")
+                 .apply(lambda row: ["background-color:#e8f0fc" if row["Mô hình"].startswith("SGKR") else ""]
+                        * len(row), axis=1), hide_index=True, width="stretch")
+    st.caption("Như bảng B5 của báo cáo. Cả 4 mô hình chạy CPU; EASE đầy đủ là ma trận float32 không lưu được.")
+
+
+def closed_form_charts(density, metric):
+    """Closed-form part: metric across densities, and metric against checkpoint size at this density."""
+    frame = closed_form_all()
+    if frame is None:
+        return
+    if metric not in CLOSED_METRICS:
+        st.caption(f"Bảng B5 không có {metric}; biểu đồ dùng NDCG@20.")
+        metric = "NDCG@20"
+    colors = alt.Scale(domain=list(CLOSED_COLORS), range=list(CLOSED_COLORS.values()))
+    lines = (alt.Chart(frame).mark_line(point=True, strokeWidth=2.5)
+             .encode(x=alt.X("Mật độ:Q", title="Mật độ dữ liệu train",
+                             axis=alt.Axis(format="%", values=list(DENSITIES))),
+                     y=alt.Y(f"{metric}:Q", title=metric),
+                     color=alt.Color("Mô hình:N", scale=colors, legend=alt.Legend(orient="bottom", columns=4)),
+                     tooltip=["Mô hình", alt.Tooltip("Mật độ:Q", format="%"), alt.Tooltip(f"{metric}:Q", format=".4f")])
+             .properties(title=f"{metric} theo mật độ", height=380))
+    current = frame[np.isclose(frame["Mật độ"], density)]
+    scatter = (alt.Chart(current).mark_circle(size=170)
+               .encode(x=alt.X("Checkpoint (MB):Q", scale=alt.Scale(type="log"),
+                               title="Dung lượng checkpoint (MB, thang log)"),
+                       y=alt.Y(f"{metric}:Q", title=metric),
+                       color=alt.Color("Mô hình:N", scale=colors, legend=None),
+                       tooltip=["Mô hình", alt.Tooltip("Checkpoint (MB):Q", format=",.1f"),
+                                alt.Tooltip(f"{metric}:Q", format=".4f")])
+               .properties(title=f"Chất lượng và dung lượng · mật độ {density:.0%}", height=380))
+    labels = scatter.mark_text(align="left", dx=10, fontSize=12).encode(text="Mô hình:N")
+    left, right = st.columns(2, gap="large")
+    left.altair_chart(lines, width="stretch")
+    right.altair_chart(scatter + labels, width="stretch")
+
+
+def closed_form_tests(b6, density):
+    """Table B6 of the closed-form part at this density."""
+    st.markdown(f"##### SGKR so với từng mô hình nghiệm đóng · mật độ {density:.0%}")
+    view = b6.assign(**{"KTC 95%": [f"[{low:+.4f}, {high:+.4f}]"
+                                     for low, high in zip(b6["KTC 95% dưới"], b6["KTC 95% trên"])]})
+    st.dataframe(view[["So sánh", "Delta NDCG@20", "KTC 95%", "p một phía", "p Holm", "Kết luận", "Số user"]].style
+                 .format({"Delta NDCG@20": "{:+.5f}", "p một phía": "{:.4f}", "p Holm": "{:.4f}"})
+                 .map(verdict_style, subset=["Kết luận"]), hide_index=True, width="stretch")
+    st.caption("Như bảng B6: paired bootstrap 10.000 lần, một phía (SGKR tốt hơn), Holm trên 3 so sánh mỗi mật độ. "
+               "Phân tích bổ sung, mang tính khám phá. EASE top-128 là bản checkpoint mà demo dùng.")
+
+
+def figure_gallery(metric, closed_form=False):
+    """Report figures of one comparison: the five main models (H1-H8) or the closed-form supplement."""
     slug = metric.lower().replace("@", "")
-    figures = [(f"H1_density_{slug}.png", "Theo mật độ dữ liệu train"), (f"H2_{slug}.png", "Kèm khoảng tin cậy 95%"),
-               (f"H4_retention_{slug}.png", "Mức giữ chất lượng khi dữ liệu thưa"),
-               (f"H5_user_groups_{slug}.png", "Theo nhóm độ dài lịch sử user"),
-               (f"H3_learning_curves_{slug}.png", "Đường học theo epoch"), ("H8_ndcg_at_k.png", "NDCG@k"),
-               ("H6a_popularity_trajectory.png", "Độ phổ biến của gợi ý"), ("H6b_coverage.png", "Độ phủ catalog"),
-               ("H7a_train_time.png", "Thời gian train"), ("H7b_inference_latency.png", "Độ trễ suy luận")]
+    if closed_form:
+        figures = [(f"H1_closed_form_density_{slug}.png", "Theo mật độ dữ liệu train"),
+                   (f"H4_closed_form_retention_{slug}.png", "Mức giữ chất lượng khi dữ liệu thưa"),
+                   (f"H5_closed_form_user_groups_{slug}.png", "Theo nhóm độ dài lịch sử user"),
+                   ("H8_closed_form_ndcg_at_k.png", "NDCG@k"), ("H7a_closed_form_train_time.png", "Thời gian train"),
+                   ("H7c_closed_form_checkpoint_size.png", "Dung lượng checkpoint")]
+        script = "make_closed_form_report.py"
+    else:
+        figures = [(f"H1_density_{slug}.png", "Theo mật độ dữ liệu train"),
+                   (f"H2_{slug}.png", "Kèm khoảng tin cậy 95%"),
+                   (f"H4_retention_{slug}.png", "Mức giữ chất lượng khi dữ liệu thưa"),
+                   (f"H5_user_groups_{slug}.png", "Theo nhóm độ dài lịch sử user"),
+                   (f"H3_learning_curves_{slug}.png", "Đường học theo epoch"), ("H8_ndcg_at_k.png", "NDCG@k"),
+                   ("H6a_popularity_trajectory.png", "Độ phổ biến của gợi ý"), ("H6b_coverage.png", "Độ phủ catalog"),
+                   ("H7a_train_time.png", "Thời gian train"), ("H7b_inference_latency.png", "Độ trễ suy luận")]
+        script = "make_report.py"
     figures = [(name, caption) for name, caption in figures if (FIGURES / name).exists()]
-    st.caption("Hình báo cáo: 5 mô hình gốc, chưa gồm EASE và GF-CF.")
     if not figures:
-        st.caption("Chưa có hình. Chạy `python scripts\\make_report.py` để vẽ.")
+        st.caption(f"Chưa có hình. Chạy `python scripts\\{script}` để vẽ.")
     for row in range(0, len(figures), 3):
         for column, (name, caption) in zip(st.columns(3, gap="large"), figures[row:row + 3]):
-            column.image(str(FIGURES / name), caption=caption, use_container_width=True)
+            column.image(str(FIGURES / name), caption=caption, width="stretch")
 
 
 def tab_benchmark(data):
-    pick_density, pick_metric, _ = st.columns([2.2, 1.2, 3], vertical_alignment="bottom")
+    pick_density, pick_metric, _, download = st.columns([2.2, 1.2, 1.6, 1.4], vertical_alignment="bottom")
     with pick_density:
         density = density_radio("bench_density")
     metric = pick_metric.selectbox("Chỉ số cho biểu đồ và hình", METRICS)
+    summary = RESULTS / "summary.csv"
+    if summary.exists():
+        download.download_button("Tải bảng kết quả (CSV)", summary.read_bytes(), "summary.csv", "text/csv",
+                                 icon=":material/download:", width="stretch")
     table = leaderboard(density)
     if table.empty:
         st.info("Chưa có kết quả cho mật độ này.")
         return
     tests = cached_significance(density)
-    overview, trend, stats, report = st.tabs(["Tổng quan", "Biểu đồ", "Kiểm định thống kê", "Giao thức & hình báo cáo"])
-    with overview:
-        findings(table, tests, density)
-        st.markdown(f"##### Bảng xếp hạng · mật độ {density:.0%}")
-        leaderboard_view(table)
-    with trend:
-        charts(density, metric)
-    with stats:
-        st.markdown(f"##### SGKR so với từng mô hình · mật độ {density:.0%}")
-        significance_view(tests)
-    with report:
-        st.markdown(
-            '<div class="protocol"><b>Giao thức đánh giá</b><ul>'
-            '<li>Tập <b>validation</b> (sản phẩm mua tiếp theo của mỗi user); tập test không được dùng.</li>'
-            f'<li>Xếp hạng trên <b>toàn bộ catalog</b> ({data.num_items:,} sản phẩm), loại các sản phẩm user đã mua; '
-            'cùng cohort user ấm cho mọi mô hình.</li>'
-            '<li>Train ở 4 mật độ (25–100% tương tác), seed 42. Chỉ số: NDCG@10/20, Recall@10/20, MRR@20.</li>'
-            '<li>Baseline GNN tối đa 200 epoch, lấy epoch tốt nhất; EASE và GF-CF là nghiệm đóng, '
-            '<b>một cấu hình cố định theo bài gốc, không tinh chỉnh</b>.</li>'
-            '<li>EASE trong bảng là ma trận đầy đủ; demo dùng bản rút gọn top-128 trọng số/sản phẩm.</li>'
-            '</ul></div>', unsafe_allow_html=True)
-        summary = RESULTS / "summary.csv"
-        if summary.exists():
-            st.download_button("Tải bảng kết quả đầy đủ (CSV)", summary.read_bytes(), "summary.csv", "text/csv")
-        figure_gallery(metric)
+    trained, closed = st.tabs(["Nhóm cần huấn luyện", "Nhóm giải trực tiếp"])
+    with trained:
+        st.caption("SGKR so với SPHR, LightGCN, XSimGCL, DirectAU: các mô hình học tham số qua nhiều vòng train (GPU).")
+        overview, trend, stats, figures = st.tabs(["Tổng quan", "Biểu đồ", "Kiểm định", "Hình"])
+        with overview:
+            findings_main(table, tests, density)
+            st.markdown(f"##### Bảng xếp hạng · mật độ {density:.0%}")
+            leaderboard_view(table)
+        with trend:
+            charts(density, metric)
+        with stats:
+            st.markdown(f"##### Mô hình đề xuất so với baseline GNN · mật độ {density:.0%}")
+            significance_view(tests)
+        with figures:
+            figure_gallery(metric)
+    with closed:
+        st.caption("SGKR so với EASE, EASE top-128, GF-CF: các mô hình giải bằng công thức toán, không cần vòng train, "
+                   "cùng kiểu với SGKR.")
+        b5, b6 = closed_form(density)
+        if b5 is None or b5.empty:
+            st.info("Chưa có bảng B5/B6. Chạy `python scripts\\make_closed_form_report.py`.")
+            return
+        overview, trend, stats, figures = st.tabs(["Tổng quan", "Biểu đồ", "Kiểm định", "Hình"])
+        with overview:
+            closed_form_overview(b5, b6, density)
+        with trend:
+            closed_form_charts(density, metric)
+        with stats:
+            closed_form_tests(b6, density)
+        with figures:
+            figure_gallery(metric, closed_form=True)
 
 
 def main():
@@ -521,7 +628,7 @@ def main():
     pills = [f"{len(MODELS)} mô hình", f"{data.num_users:,} khách hàng", f"{data.num_items:,} sản phẩm"]
     st.markdown('<div class="topbar"><div class="ttl">Hệ thống khuyến nghị sản phẩm điện tử</div>'
                 + "".join(f'<span class="pill">{p}</span>' for p in pills) + "</div>", unsafe_allow_html=True)
-    existing, new, benchmark = st.tabs(["Khách hàng có sẵn", "Khách hàng mới", "Benchmark học thuật"])
+    existing, new, benchmark = st.tabs(["Gợi ý cho khách", "Khách mới", "Đánh giá mô hình"])
     with existing:
         tab_existing(data, samples, eligible)
     with new:

@@ -48,16 +48,17 @@ def hatch(model):
     return None if model in PROPOSED else "//"
 
 
-def density_bars(ax, value, fmt="{:.4f}", densities=ASCENDING):
+def density_bars(ax, value, fmt="{:.4f}", densities=ASCENDING, order=ORDER, style=STYLE):
     """H1 layout: one group per density, one bar per model. value(model, density) -> None (not run) or a
-    number. A missing bar's own slot is marked "chưa chạy"."""
-    width = .8 / len(ORDER)
+    number. A missing bar's own slot is marked "chưa chạy". order/style select another set of models
+    (the closed-form supplement)."""
+    width = .8 / len(order)
     tops, missing = [], []
-    for k, model in enumerate(ORDER):
-        spec = STYLE[model]
+    for k, model in enumerate(order):
+        spec = style[model]
         ax.bar(np.nan, np.nan, color=spec["color"], hatch=hatch(model), edgecolor="white", label=spec["label"])
         for g, density in enumerate(densities):
-            x = g + (k - (len(ORDER) - 1) / 2) * width
+            x = g + (k - (len(order) - 1) / 2) * width
             result = value(model, density)
             if result is None:
                 missing.append(x)
@@ -79,10 +80,11 @@ def mark_missing(ax, missing):
         ax.text(x, base, "chưa chạy", rotation=90, ha="center", va="bottom", fontsize=LABEL, color=MUTED)
 
 
-def bar_figure(value, ylabel, name, folder, notes, fmt="{:.4f}", log=False, extra=None):
+def bar_figure(value, ylabel, name, folder, notes, fmt="{:.4f}", log=False, extra=None, order=ORDER, style=STYLE,
+               ncol=3):
     fig, ax = plt.subplots(figsize=SIZE, layout="constrained")
     style_axes(ax)
-    tops, missing = density_bars(ax, value, fmt)
+    tops, missing = density_bars(ax, value, fmt, order=order, style=style)
     if log:
         ax.set_yscale("log")
         ax.set_ylim(min(tops) / 3 if tops else .1, max(tops) * 6 if tops else 10)
@@ -92,7 +94,7 @@ def bar_figure(value, ylabel, name, folder, notes, fmt="{:.4f}", log=False, extr
         extra(ax)
     mark_missing(ax, missing)
     ax.set_ylabel(ylabel)
-    legend(fig)
+    legend(fig, ncol=ncol)
     save(fig, folder, name, notes)
 
 
@@ -227,14 +229,15 @@ def figure_loss(summary, folder, notes, seed=42):
     save(fig, folder, "H3c_loss", notes)
 
 
-def figure_groups(scores, full_train, metric, folder, notes):
+def figure_groups(scores, full_train, metric, folder, notes, order=ORDER, style=STYLE, name="H5_user_groups",
+                  ncol=3):
     degree = full_train.groupby("u_idx").size()
     fig, axes = grid(TALL)  # 60 labelled bars need the extra height
-    width = .8 / len(ORDER)
+    width = .8 / len(order)
     tops = []
     for ax, density in zip(axes.flat, PANELS):
         sizes, drawn = None, 0
-        for k, model in enumerate(ORDER):
+        for k, model in enumerate(order):
             users, values = model_average(scores, model, density, metric)
             if values is None:
                 continue
@@ -242,8 +245,8 @@ def figure_groups(scores, full_train, metric, folder, notes):
             masks = [(n >= lo) & (n <= hi) for _, lo, hi in BINS]
             sizes = sizes or [int(mask.sum()) for mask in masks]
             for g, mask in enumerate(masks):
-                x, mean = g + (k - (len(ORDER) - 1) / 2) * width, values[mask].mean()
-                ax.bar(x, mean, width=width, color=STYLE[model]["color"], edgecolor="white", linewidth=1,
+                x, mean = g + (k - (len(order) - 1) / 2) * width, values[mask].mean()
+                ax.bar(x, mean, width=width, color=style[model]["color"], edgecolor="white", linewidth=1,
                        hatch=hatch(model))
                 ax.annotate(f"{mean:.4f}", (x, mean), xytext=(0, 1.5), textcoords="offset points", ha="center",
                             va="bottom", fontsize=LABEL, rotation=90)
@@ -257,10 +260,10 @@ def figure_groups(scores, full_train, metric, folder, notes):
     axes[0, 0].set_ylim(0, (max(tops) if tops else 1) * 1.3)  # room for the value labels (shared y)
     shared_xlabel(fig, axes, "Số tương tác của user trong tập huấn luyện gốc", pad=38)
     fig.supylabel(metric, fontsize=9)
-    handles = [plt.Rectangle((0, 0), 1, 1, facecolor=STYLE[m]["color"], edgecolor="white", hatch=hatch(m))
-               for m in ORDER]
-    legend(fig, handles, [STYLE[m]["label"] for m in ORDER])
-    save(fig, folder, f"H5_user_groups_{slug(metric)}", notes)
+    handles = [plt.Rectangle((0, 0), 1, 1, facecolor=style[m]["color"], edgecolor="white", hatch=hatch(m))
+               for m in order]
+    legend(fig, handles, [style[m]["label"] for m in order], ncol=ncol)
+    save(fig, folder, f"{name}_{slug(metric)}", notes)
 
 
 def popularity_stats(scores, full_train, num_items):
@@ -301,20 +304,20 @@ def figure_popularity(stats, folder, notes):
     save(fig, folder, "H6a_popularity_trajectory", notes)
 
 
-def figure_ndcg_at_k(scores, folder, notes):
+def figure_ndcg_at_k(scores, folder, notes, order=ORDER, style=STYLE, name="H8_ndcg_at_k", ncol=3):
     discount = 1 / np.log2(np.arange(2, 22))
     ks = np.arange(1, 21)
     fig, axes = grid()
     for ax, density in zip(axes.flat, PANELS):
         drawn = 0
-        for model in ORDER:
+        for model in order:
             curves = []
             for key in (k for k in scores if k[0] == model and k[1] == density):
                 _, predictions, _, truth = scores[key]
                 curves.append(((predictions == truth[:, None]) * discount).cumsum(axis=1).mean(axis=0))
             if not curves:
                 continue
-            spec = STYLE[model]
+            spec = style[model]
             ax.plot(ks, np.mean(curves, axis=0), color=spec["color"], linestyle=spec["line"], marker=spec["marker"],
                     markersize=3, markevery=[0, 4, 9, 19], linewidth=1.4, label=spec["label"])
             drawn += 1
@@ -323,10 +326,10 @@ def figure_ndcg_at_k(scores, folder, notes):
         ax.set_xticks([1, 5, 10, 15, 20])
     shared_xlabel(fig, axes, "Độ dài danh sách K")
     fig.supylabel("NDCG@K", fontsize=9)
-    handles = [plt.Line2D([], [], color=STYLE[m]["color"], linestyle=STYLE[m]["line"], marker=STYLE[m]["marker"],
-                          markersize=3, linewidth=1.4) for m in ORDER]
-    legend(fig, handles, [STYLE[m]["label"] for m in ORDER])
-    save(fig, folder, "H8_ndcg_at_k", notes)
+    handles = [plt.Line2D([], [], color=style[m]["color"], linestyle=style[m]["line"], marker=style[m]["marker"],
+                          markersize=3, linewidth=1.4) for m in order]
+    legend(fig, handles, [style[m]["label"] for m in order], ncol=ncol)
+    save(fig, folder, name, notes)
 
 
 def draw_all(summary, scores, full_train, num_items, folder, notes):
