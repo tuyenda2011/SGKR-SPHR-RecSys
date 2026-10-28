@@ -8,6 +8,7 @@ SGKR, SPHR, EASE and GF-CF score any item history directly (no user table), whic
 """
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass
@@ -26,6 +27,14 @@ LABELS = {"sgkr": "SGKR", "sphr": "SPHR", "lightgcn": "LightGCN", "xsimgcl": "XS
           "ease": "EASE (top-128)", "gfcf": "GF-CF"}
 COLORS = {"sgkr": "#2a78d6", "sphr": "#eb6834", "lightgcn": "#1baf7a", "xsimgcl": "#eda100", "directau": "#e87ba4",
           "ease": "#7a5cc7", "gfcf": "#8c6d46"}
+# Display rows of the demo: (heading, card subtitle, models).
+GROUPS = (("Mô hình đề xuất", "Đề xuất", ("sgkr", "sphr")),
+          ("Baseline đồ thị · học embedding", "Baseline · GNN", ("lightgcn", "xsimgcl", "directau")),
+          ("Baseline closed-form · cùng họ SGKR", "Baseline · closed-form", ("ease", "gfcf")))
+KINDS = {model: kind for _, kind, models in GROUPS for model in models}
+# Accent per family (badges, table text) with a light tint for backgrounds.
+FAMILY_COLORS = {"Đề xuất": ("#1d63c2", "#e8f0fc"), "Baseline · GNN": ("#13865d", "#e6f5ee"),
+                 "Baseline · closed-form": ("#6a4bbd", "#f0ecfa")}
 DENSITIES = (1.0, 0.75, 0.5, 0.25)
 SEED = 42
 # DEMO_RESULTS points the demo at another results tree, e.g. results\preview (1-epoch checkpoints).
@@ -35,6 +44,15 @@ RESULTS = Path(PREVIEW) if PREVIEW else ROOT / "results"
 
 def run_dir(model, density, results=None, seed=SEED):
     return Path(results or RESULTS) / model / f"d{round(density * 100)}" / f"seed{seed}"
+
+
+def checkpoint_ndcg(model, density, results=None):
+    """Validation NDCG@20 of the checkpoint the demo loads (EASE: its top-128 version), or None."""
+    path = run_dir(model, density, results) / "metrics.json"
+    if not path.exists():
+        return None
+    run = json.loads(path.read_text(encoding="utf-8"))
+    return (run.get("checkpoint_val_metrics") or run["val_metrics"])["NDCG@20"]
 
 
 @dataclass
