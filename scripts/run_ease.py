@@ -63,6 +63,9 @@ def ease(x, regularization, *, block=1024, available_bytes=None):
     diagonal = matrix.diagonal().copy()
     if not np.isfinite(diagonal).all() or np.any(diagonal <= 0):
         raise FloatingPointError("EASE inverse is nonfinite or has nonpositive diagonal")
+    # P is symmetric, so its transpose is the same matrix as a C-order view (no copy). Scoring needs C order:
+    # sparse X @ a Fortran-order B makes scipy copy all of B (8 GB) on every batch.
+    matrix = matrix.T
     matrix /= -diagonal[None, :]
     np.fill_diagonal(matrix, 0.)
     return matrix
