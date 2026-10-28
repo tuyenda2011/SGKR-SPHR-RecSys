@@ -1,58 +1,59 @@
-# SGKR & SPHR — A Recommender System for Electronics Products
+# SGKR & SPHR — Hệ thống khuyến nghị sản phẩm điện tử
 
-**English** · [Tiếng Việt](README.vi.md)
+**Tiếng Việt** · [English](README.en.md)
 
-An individual *Advanced Machine Learning* major assignment. I propose two top-N recommenders, **SGKR** (a closed-form
-item–item model) and **SPHR** (a history-based model trained by gradient descent), and compare them with five
-published baselines on Amazon Electronics. Every model shares the same data, split, full-catalog evaluator and
-metrics, and every reported number can be re-derived from the stored run files.
+Bài tập lớn cá nhân môn *Học máy nâng cao*. Tôi đề xuất hai mô hình gợi ý top-N: **SGKR** (mô hình item–item giải trực tiếp
+bằng công thức) và **SPHR** (mô hình dựa trên lịch sử mua, huấn luyện bằng gradient), rồi so sánh với năm
+baseline đã công bố trên bộ dữ liệu Amazon Electronics. Mọi mô hình dùng chung dữ liệu, cách chia, bộ đánh giá
+xếp hạng trên toàn catalog và các chỉ số; mọi con số trong tài liệu này đều tính lại được từ các file kết quả
+đã lưu.
 
-## Highlights
+## Điểm chính
 
-- **SGKR has the best NDCG@20 at full density (0.0383)** and beats LightGCN, XSimGCL and DirectAU with
-  statistical significance (Holm-adjusted p = 0.0006), while training in **2.5 minutes on a CPU**, about 17×
-  faster than the fastest graph neural network.
-- **SPHR is the strongest model on sparse data:** best NDCG@20 at 25 % and 50 % of the training interactions.
-- **Against closed-form models of its own kind**, SGKR is statistically tied with full EASE at full density,
-  which needs a 7.5 GB matrix that cannot be stored, and beats EASE pruned to a storable size and GF-CF.
-- **Limits:** SGKR is not the best at 50 % density, and all results come from a single seed on the validation
-  split (see [Limitations](#limitations)).
+- **SGKR có NDCG@20 cao nhất ở mật độ đầy đủ (0,0383)** và tốt hơn LightGCN, XSimGCL, DirectAU một cách có
+  ý nghĩa thống kê (p sau hiệu chỉnh Holm = 0,0006), trong khi chỉ mất **2,5 phút trên CPU** để huấn luyện,
+  nhanh hơn khoảng 17 lần so với mạng nơ-ron đồ thị nhanh nhất.
+- **SPHR mạnh nhất khi dữ liệu thưa:** NDCG@20 cao nhất ở 25 % và 50 % số tương tác train.
+- **So với các mô hình giải trực tiếp cùng kiểu**, SGKR ngang EASE đầy đủ ở mật độ đầy đủ (EASE cần ma trận
+  7,5 GB, không lưu được), và tốt hơn bản EASE rút gọn về cỡ lưu được cũng như GF-CF.
+- **Hạn chế:** SGKR không phải tốt nhất ở mật độ 50 %, và mọi kết quả đến từ một seed duy nhất trên tập
+  validation (xem [Hạn chế](#hạn-chế)).
 
-## Contents
+## Mục lục
 
-[Reproducing the results](#reproducing-the-results) · [Demo](#demo) · [Models](#models) · [Data](#data) ·
-[Results](#results) · [Evaluation protocol](#evaluation-protocol) · [Limitations](#limitations) ·
-[Repository layout](#repository-layout) · [References](#references)
+[Tái lập kết quả](#tái-lập-kết-quả) · [Demo](#demo) · [Mô hình](#mô-hình) · [Dữ liệu](#dữ-liệu) ·
+[Kết quả](#kết-quả) · [Giao thức đánh giá](#giao-thức-đánh-giá) · [Hạn chế](#hạn-chế) ·
+[Cấu trúc thư mục](#cấu-trúc-thư-mục) · [Tài liệu tham khảo](#tài-liệu-tham-khảo)
 
-## Reproducing the results
+## Tái lập kết quả
 
 ```bash
 conda create -n AML python=3.11 && conda activate AML
 pip install -r requirements.txt
 
-python scripts/prepare_data.py                         # download from SNAP and build the dataset
-python scripts/audit_data.py                           # data checks
+python scripts/prepare_data.py                         # tải từ SNAP và dựng bộ dữ liệu
+python scripts/audit_data.py                           # kiểm tra dữ liệu
 
 python scripts/train_model.py --model sgkr --density 1.0
 #   --model    sgkr | sphr | lightgcn | xsimgcl | directau | ease | gfcf
 #   --density  1.0 | 0.75 | 0.5 | 0.25
 
 python scripts/summarize_results.py                    # results/summary.csv
-python scripts/make_report.py                          # main figures H1–H8, tables B1–B4
-python scripts/make_closed_form_report.py              # closed-form figures, tables B5–B6
-python scripts/verify_results.py                       # re-derive every metric from the stored files
+python scripts/make_report.py                          # hình H1–H8, bảng B1–B4 (so sánh chính)
+python scripts/make_closed_form_report.py              # hình closed-form, bảng B5–B6 (so sánh bổ sung)
+python scripts/verify_results.py                       # tính lại mọi chỉ số từ các file đã lưu
 python -m pytest -q tests
 ```
 
-Each run writes `results/<model>/d<density>/seed42/` with `metrics.json`, the validation predictions, the
-checkpoint, `history.csv` for the iterative models and `logs/`, which holds the run plan, an archive of the
-source code, progress and resource budget. Finished runs are skipped. The iterative models train all 200 epochs
-(no early stopping) and keep the checkpoint with the best validation NDCG@20.
-`python scripts/run_experiments.py` runs the main grid: SGKR, SPHR and the three GNNs at four densities.
+Mỗi run ghi vào `results/<model>/d<mật độ>/seed42/`: `metrics.json`, dự đoán validation, checkpoint,
+`history.csv` (với mô hình huấn luyện theo epoch) và `logs/` (kế hoạch run, bản lưu mã nguồn, tiến độ, ngân sách
+tài nguyên). Run đã xong được bỏ qua. Các mô hình huấn luyện lặp chạy đủ 200 epoch, không dừng sớm, và giữ
+checkpoint có NDCG@20 validation cao nhất. `python scripts/run_experiments.py` chạy thực nghiệm chính: SGKR, SPHR
+và 3 GNN ở 4 mật độ.
 
-**Hardware.** SGKR and GF-CF run on a laptop CPU. SPHR and the graph baselines were trained on Kaggle GPUs
-(`kaggle/kaggle_train.ipynb`). EASE inverts a dense 44,843 × 44,843 matrix and needs **about 9.1 GB of free
-RAM**, so it was run in a Kaggle CPU session (`kaggle/kaggle_ease.ipynb`).
+**Phần cứng.** SGKR và GF-CF chạy được trên CPU laptop. SPHR và các baseline đồ thị được train trên GPU Kaggle
+(`kaggle/kaggle_train.ipynb`). EASE phải nghịch đảo ma trận dày 44.843 × 44.843 nên cần **khoảng 9,1 GB RAM
+trống**; mô hình này được chạy trên Kaggle CPU (`kaggle/kaggle_ease.ipynb`).
 
 ## Demo
 
@@ -60,160 +61,160 @@ RAM**, so it was run in a Kaggle CPU session (`kaggle/kaggle_ease.ipynb`).
 python -m streamlit run app/streamlit_app.py
 ```
 
-The interface is in Vietnamese and laid out for a 1920 × 1080 screen.
+Giao diện tiếng Việt, bố cục cho màn hình 1920 × 1080.
 
-- **Gợi ý cho khách** (existing customer): the top-10 of all seven models side by side, with the customer's
-  next purchase highlighted and SGKR's explanation of its first recommendation.
-- **Khách mới** (new customer): build a history by searching for products. SGKR, SPHR, EASE and GF-CF answer at
-  once; the graph baselines cannot serve unseen users.
-- **Đánh giá mô hình** (evaluation): leaderboards, charts, statistical tests and report figures, split into
-  the trained-model and the closed-form comparisons.
+- **Gợi ý cho khách:** top-10 của cả 7 mô hình đặt cạnh nhau, đánh dấu sản phẩm khách mua tiếp theo, kèm phần
+  giải thích của SGKR cho gợi ý số 1.
+- **Khách mới:** tự tạo lịch sử bằng cách tìm sản phẩm. SGKR, SPHR, EASE và GF-CF gợi ý ngay; các baseline đồ
+  thị không phục vụ được user chưa có lúc train.
+- **Đánh giá mô hình:** bảng xếp hạng, biểu đồ, kiểm định thống kê và hình báo cáo, chia thành nhóm cần huấn
+  luyện và nhóm giải trực tiếp.
 
-The demo loads the stored checkpoints and reads only the training and validation data.
+Demo nạp các checkpoint đã lưu và chỉ đọc tập train, validation.
 
-## Models
+## Mô hình
 
-| Model | Family | How it is obtained | Hardware |
+| Mô hình | Họ | Cách tạo ra | Phần cứng |
 |---|---|---|---|
-| **SGKR** (proposed) | Item–item regression | Closed-form solve | CPU |
-| **SPHR** (proposed) | History-based factorisation | Adam, full-catalog softmax | GPU |
-| LightGCN [1] | Graph neural network | Gradient training, up to 200 epochs | GPU |
-| XSimGCL [2] | Graph neural network + contrastive learning | Gradient training, up to 200 epochs | GPU |
-| DirectAU [3] | Alignment–uniformity objective | Gradient training, up to 200 epochs | GPU |
-| EASE [4] | Item–item regression | Closed-form solve | CPU |
-| GF-CF [5] | Graph filtering | Closed-form (SVD) | CPU |
+| **SGKR** (đề xuất) | Hồi quy item–item | Giải trực tiếp bằng công thức | CPU |
+| **SPHR** (đề xuất) | Phân rã dựa trên lịch sử | Adam, softmax trên toàn catalog | GPU |
+| LightGCN [1] | Mạng nơ-ron đồ thị | Huấn luyện gradient, tối đa 200 epoch | GPU |
+| XSimGCL [2] | Mạng nơ-ron đồ thị + học tương phản | Huấn luyện gradient, tối đa 200 epoch | GPU |
+| DirectAU [3] | Mục tiêu alignment–uniformity | Huấn luyện gradient, tối đa 200 epoch | GPU |
+| EASE [4] | Hồi quy item–item | Giải trực tiếp bằng công thức | CPU |
+| GF-CF [5] | Lọc trên đồ thị | Giải trực tiếp (SVD) | CPU |
 
-**SGKR** is an item–item ridge regression with graph regularisation. Each item is predicted from its 128 most
-related items, with adaptive regularisation, and the system is solved exactly (Cholesky) with the target item
-excluded from its own context. It has no user parameters and no optimiser, so it scores any purchase history
-directly, including users never seen in training. It can also explain each recommendation by the history items
-that contribute most.
+**SGKR** là hồi quy ridge item–item có chuẩn hóa theo đồ thị. Mỗi sản phẩm được dự đoán từ 128 sản phẩm liên
+quan nhất, với mức chuẩn hóa thích nghi; hệ phương trình được giải chính xác (Cholesky) và loại chính sản phẩm
+mục tiêu khỏi ngữ cảnh của nó. SGKR không có tham số riêng cho từng user và không cần bộ tối ưu, nên chấm điểm
+được ngay cho bất kỳ lịch sử mua nào, kể cả user chưa từng xuất hiện khi train. Mô hình cũng giải thích được
+mỗi gợi ý bằng các sản phẩm trong lịch sử đóng góp nhiều nhất.
 
-**SPHR** represents a user by their normalised purchase history over diffusion-filtered item tables:
+**SPHR** biểu diễn user bằng lịch sử mua đã chuẩn hóa trên các bảng item được lọc khuếch tán:
 
-$$
+```math
 \operatorname{score}(u, i) = \mathbf{q}_u^{\top} \tilde{\mathbf{v}}_i + b_i,
 \qquad \mathbf{q}_u = |H_u|^{-1/2} \sum_{j \in H_u} \tilde{\mathbf{s}}_j
-$$
+```
 
-where $H_u$ is the user's purchase history, $\tilde{\mathbf{s}}_j$ and $\tilde{\mathbf{v}}_i$ are the filtered source and target item
-vectors and $b_i$ is an item bias. It is trained with Adam on a full-catalog softmax over leave-one-out contexts.
-Like SGKR, it serves new users from their history alone.
+trong đó $`H_u`$ là lịch sử mua của user, $`\tilde{\mathbf{s}}_j`$ và $`\tilde{\mathbf{v}}_i`$ là vector nguồn và vector đích
+đã lọc của sản phẩm, $`b_i`$ là độ lệch riêng của sản phẩm. Mô hình được huấn luyện bằng Adam với softmax trên toàn
+catalog theo ngữ cảnh leave-one-out. Giống SGKR, SPHR phục vụ được user mới chỉ từ lịch sử.
 
-The three graph baselines learn one embedding per training user, so they cannot recommend to a new user without
-retraining.
+Ba baseline đồ thị học một vector riêng cho từng user lúc train, nên không gợi ý được cho user mới nếu không
+huấn luyện lại.
 
-## Data
+## Dữ liệu
 
-Amazon Electronics 5-core reviews [6, 7]. Ratings of 4 or more are positives; users and items keep at least five
-interactions; each user's history is split chronologically.
+Đánh giá Amazon Electronics 5-core [6, 7]. Đánh giá từ 4 sao trở lên là tương tác dương; user và sản phẩm có ít
+nhất 5 tương tác; lịch sử của mỗi user được chia theo thời gian.
 
-| Statistic | Value |
+| Thống kê | Giá trị |
 |---|---:|
-| Users | 124,895 |
-| Items | 44,843 |
-| Training interactions | 858,192 |
-| Validation interactions | 107,274 |
-| Training sparsity | 99.98 % |
-| History length, mean / median | 6.87 / 5 |
+| Số user | 124.895 |
+| Số sản phẩm | 44.843 |
+| Tương tác train | 858.192 |
+| Tương tác validation | 107.274 |
+| Độ thưa tập train | 99,98 % |
+| Độ dài lịch sử, trung bình / trung vị | 6,87 / 5 |
 
-To measure robustness to data scarcity, every model is also trained on **75 %, 50 % and 25 %** of the training
-interactions (sampled with seed 42).
+Để đo độ bền khi dữ liệu khan hiếm, mọi mô hình còn được train trên **75 %, 50 % và 25 %** số tương tác train
+(lấy mẫu với seed 42).
 
-## Results
+## Kết quả
 
-### Accuracy
+### Độ chính xác
 
-NDCG@20 on the validation split: ranking over the full catalog with each user's history masked, 107,215
-evaluable users.
+NDCG@20 trên tập validation: xếp hạng trên toàn bộ catalog, loại các sản phẩm user đã mua, 107.215 user được
+đánh giá.
 
-| Model | 25 % | 50 % | 75 % | 100 % | Training time at 100 % |
+| Mô hình | 25 % | 50 % | 75 % | 100 % | Thời gian train ở 100 % |
 |---|---:|---:|---:|---:|---:|
-| **SGKR** | 0.0080 | 0.0171 | 0.0293 | **0.0383** | 2.5 min (CPU) |
-| **SPHR** | **0.0177** | **0.0227** | 0.0290 | 0.0352 | 127 min (GPU) |
-| XSimGCL | 0.0112 | 0.0193 | 0.0276 | 0.0329 | 63 min (GPU) |
-| DirectAU | 0.0103 | 0.0205 | 0.0270 | 0.0321 | 85 min (GPU) |
-| LightGCN | 0.0084 | 0.0184 | 0.0226 | 0.0265 | 43 min (GPU) |
-| EASE | 0.0067 | 0.0192 | **0.0294** | 0.0380 | 11 min (CPU) |
-| GF-CF | 0.0039 | 0.0038 | 0.0084 | 0.0189 | 45 min (CPU) |
+| **SGKR** | 0,0080 | 0,0171 | 0,0293 | **0,0383** | 2,5 phút (CPU) |
+| **SPHR** | **0,0177** | **0,0227** | 0,0290 | 0,0352 | 127 phút (GPU) |
+| XSimGCL | 0,0112 | 0,0193 | 0,0276 | 0,0329 | 63 phút (GPU) |
+| DirectAU | 0,0103 | 0,0205 | 0,0270 | 0,0321 | 85 phút (GPU) |
+| LightGCN | 0,0084 | 0,0184 | 0,0226 | 0,0265 | 43 phút (GPU) |
+| EASE | 0,0067 | 0,0192 | **0,0294** | 0,0380 | 11 phút (CPU) |
+| GF-CF | 0,0039 | 0,0038 | 0,0084 | 0,0189 | 45 phút (CPU) |
 
-Training times were measured on different hardware (CPU vs. GPU) and are comparable only in order of magnitude.
+Thời gian train đo trên phần cứng khác nhau (CPU và GPU), chỉ nên so theo bậc độ lớn.
 
 <p align="center">
-  <img src="reports/figures/H1_density_ndcg20.png" width="49%" alt="NDCG@20 by density, trained models">
-  <img src="reports/figures/H1_closed_form_density_ndcg20.png" width="49%" alt="NDCG@20 by density, closed-form models">
+  <img src="reports/figures/H1_density_ndcg20.png" width="49%" alt="NDCG@20 theo mật độ, nhóm cần huấn luyện">
+  <img src="reports/figures/H1_closed_form_density_ndcg20.png" width="49%" alt="NDCG@20 theo mật độ, nhóm giải trực tiếp">
 </p>
-<p align="center"><sub>NDCG@20 by training density. Left: SGKR, SPHR and the graph baselines. Right: SGKR and
-the closed-form baselines.</sub></p>
+<p align="center"><sub>NDCG@20 theo mật độ dữ liệu train. Trái: SGKR, SPHR và các baseline đồ thị. Phải: SGKR và
+các baseline giải trực tiếp.</sub></p>
 
-### Statistical comparisons
+### So sánh thống kê
 
-The comparisons fall into two families, each with its own Holm correction. All tests are paired bootstraps over
-users (10,000 resamples), one-sided in favour of the proposed model.
+Các phép so sánh chia thành hai nhóm, mỗi nhóm hiệu chỉnh Holm riêng. Mọi kiểm định là paired bootstrap theo
+user (10.000 lần lấy mẫu), một phía theo hướng mô hình đề xuất tốt hơn.
 
-**Main comparison: proposed models vs. graph neural networks** (table B3, full density).
+**So sánh chính: mô hình đề xuất so với mạng nơ-ron đồ thị** (bảng B3, mật độ đầy đủ).
 
-| Comparison | Δ NDCG@20 | 95 % CI | Holm p |
+| So sánh | Δ NDCG@20 | KTC 95 % | p Holm |
 |---|---:|---|---:|
-| SGKR − LightGCN | +0.0117 | [+0.0109, +0.0126] | 0.0006 |
-| SGKR − XSimGCL | +0.0054 | [+0.0046, +0.0061] | 0.0006 |
-| SGKR − DirectAU | +0.0062 | [+0.0055, +0.0070] | 0.0006 |
-| SPHR − LightGCN | +0.0086 | [+0.0080, +0.0093] | 0.0006 |
-| SPHR − XSimGCL | +0.0023 | [+0.0017, +0.0028] | 0.0006 |
-| SPHR − DirectAU | +0.0031 | [+0.0025, +0.0038] | 0.0006 |
+| SGKR − LightGCN | +0,0117 | [+0,0109; +0,0126] | 0,0006 |
+| SGKR − XSimGCL | +0,0054 | [+0,0046; +0,0061] | 0,0006 |
+| SGKR − DirectAU | +0,0062 | [+0,0055; +0,0070] | 0,0006 |
+| SPHR − LightGCN | +0,0086 | [+0,0080; +0,0093] | 0,0006 |
+| SPHR − XSimGCL | +0,0023 | [+0,0017; +0,0028] | 0,0006 |
+| SPHR − DirectAU | +0,0031 | [+0,0025; +0,0038] | 0,0006 |
 
-**Supplementary comparison: SGKR vs. closed-form models** (tables B5–B6, Holm over three comparisons per
-density). This family was defined after the results were seen and is exploratory.
+**So sánh bổ sung: SGKR với các mô hình giải trực tiếp** (bảng B5–B6, Holm trên 3 phép so sánh mỗi mật độ).
+Nhóm so sánh này được lập sau khi đã xem kết quả nên mang tính khám phá.
 
 | SGKR − … | 25 % | 50 % | 75 % | 100 % |
 |---|---|---|---|---|
-| EASE (full, 7.5 GB) | SGKR better | EASE better | tie (p = 0.72) | tie (p = 0.051) |
-| EASE top-128 (25–32 MB) | SGKR better | EASE better | SGKR better | SGKR better |
-| GF-CF | SGKR better | SGKR better | SGKR better | SGKR better |
+| EASE (đầy đủ, 7,5 GB) | SGKR hơn | EASE hơn | ngang (p = 0,72) | ngang (p = 0,051) |
+| EASE top-128 (25–32 MB) | SGKR hơn | EASE hơn | SGKR hơn | SGKR hơn |
+| GF-CF | SGKR hơn | SGKR hơn | SGKR hơn | SGKR hơn |
 
-SGKR checkpoints take 6–41 MB depending on density, about the size of EASE top-128.
+Checkpoint SGKR chiếm 6–41 MB tùy mật độ, cỡ tương đương EASE top-128.
 
-**Where SGKR does not win.** At 50 % density SGKR is below the three graph baselines and both EASE variants.
-At 25 % and 50 % SPHR is the strongest model. GF-CF is weak on this very sparse data: its symmetric degree
-normalisation favours rarely bought items.
+**Chỗ SGKR không thắng.** Ở mật độ 50 %, SGKR thấp hơn cả 3 baseline đồ thị và cả hai bản EASE. Ở 25 % và 50 %,
+SPHR là mô hình mạnh nhất. GF-CF yếu trên dữ liệu rất thưa này vì cách chuẩn hóa bậc đối xứng của nó ưu tiên
+các sản phẩm ít người mua.
 
-## Evaluation protocol
+## Giao thức đánh giá
 
-- **Target:** each user's next purchase. Every model ranks the full catalog of 44,843 items, with the user's
-  training history masked, and every model is evaluated on the same warm-user cohort.
-- **Metrics:** NDCG@10/20, Recall@10/20 and MRR@20.
-- **Model selection:** configurations were compared on one half of the validation users (hash split); the
-  other half was reserved for confirmation. Decisions are logged append-only.
-- **Significance:** paired bootstrap over users, one-sided, Holm-corrected within each comparison family.
-- **Baseline configurations:** EASE and GF-CF use one fixed configuration each and are not tuned on this data:
-  EASE λ = 300 (the middle of the usual 100/300/1000 grid) and GF-CF with the authors' defaults (k = 256,
-  α = 0.3). The demo uses EASE pruned to its 128 largest weights per item; every EASE number above is the
-  full matrix unless marked *top-128*.
+- **Mục tiêu:** sản phẩm mua tiếp theo của mỗi user. Mọi mô hình xếp hạng toàn bộ 44.843 sản phẩm, loại các
+  sản phẩm user đã mua, và được đánh giá trên cùng một nhóm user.
+- **Chỉ số:** NDCG@10/20, Recall@10/20 và MRR@20.
+- **Chọn cấu hình:** chỉ so trên một nửa số user validation (chia theo băm ID); nửa còn lại dành để xác nhận.
+  Mọi quyết định được ghi vào nhật ký theo kiểu chỉ thêm.
+- **Kiểm định:** paired bootstrap theo user, một phía, hiệu chỉnh Holm trong từng nhóm so sánh.
+- **Cấu hình baseline:** EASE và GF-CF mỗi mô hình dùng một cấu hình cố định, không tinh chỉnh trên dữ liệu
+  này: EASE λ = 300 (giá trị giữa lưới thường dùng 100/300/1000), GF-CF theo mặc định của tác giả (k = 256,
+  α = 0,3). Demo dùng EASE rút gọn còn 128 trọng số lớn nhất mỗi sản phẩm; mọi số EASE ở trên là ma trận đầy đủ
+  trừ khi ghi *top-128*.
 
-## Limitations
+## Hạn chế
 
-- **One seed (42).** Variance across random seeds is not measured; the confidence intervals reflect user
-  sampling only.
-- **Validation split only.** The test split is held out, and no number here is a final test result.
-- **Exploratory supplementary comparison.** The closed-form comparison was added after the results were known.
-- **Untuned closed-form baselines.** EASE and GF-CF were not tuned on this data, so their scores may be lower
-  bounds of what they can reach.
-- **One dataset.** All conclusions concern Amazon Electronics.
+- **Một seed (42).** Chưa đo độ dao động giữa các seed; khoảng tin cậy chỉ phản ánh việc lấy mẫu user.
+- **Chỉ trên validation.** Tập test được giữ riêng; không con số nào ở đây là kết quả test cuối cùng.
+- **So sánh bổ sung mang tính khám phá.** Nhóm so sánh với mô hình giải trực tiếp được thêm sau khi đã biết kết
+  quả.
+- **Baseline giải trực tiếp chưa tinh chỉnh.** EASE và GF-CF không được tinh chỉnh trên dữ liệu này, nên điểm
+  của chúng có thể thấp hơn mức tốt nhất chúng đạt được.
+- **Một bộ dữ liệu.** Mọi kết luận chỉ áp dụng cho Amazon Electronics.
 
-## Repository layout
+## Cấu trúc thư mục
 
 ```
-configs/   locked configurations: sgkr, sphr, lightgcn, xsimgcl, directau, ease, gfcf, common
-src/       data pipeline, evaluator, losses, training loop, models (src/models/*.py)
-scripts/   command-line entry points; scripts/verify/ holds SymPy checks of the closed forms
-app/       Streamlit demo: streamlit_app.py (UI), recommender.py (model loading), benchmark.py (statistics)
-kaggle/    notebooks used on Kaggle
-results/   one folder per run and summary.csv (git tracks only checkpoints and training histories)
-reports/   figures/ (PNG) and tables/ (CSV)
-tests/     pytest suite
+configs/   cấu hình đã khóa: sgkr, sphr, lightgcn, xsimgcl, directau, ease, gfcf, common
+src/       xử lý dữ liệu, bộ đánh giá, hàm mất mát, vòng huấn luyện, các mô hình (src/models/*.py)
+scripts/   các lệnh chạy; scripts/verify/ chứa kiểm chứng SymPy cho các nghiệm đóng
+app/       demo Streamlit: streamlit_app.py (giao diện), recommender.py (nạp mô hình), benchmark.py (thống kê)
+kaggle/    notebook dùng trên Kaggle
+results/   mỗi run một thư mục, cùng summary.csv (git chỉ lưu checkpoint và lịch sử huấn luyện)
+reports/   figures/ (ảnh PNG) và tables/ (bảng CSV)
+tests/     bộ kiểm thử pytest
 ```
 
-## References
+## Tài liệu tham khảo
 
 1. X. He, K. Deng, X. Wang, Y. Li, Y. Zhang, M. Wang. *LightGCN: Simplifying and Powering Graph Convolution
    Network for Recommendation.* SIGIR 2020.
