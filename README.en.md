@@ -60,14 +60,14 @@ RAM**, so it was run in a Kaggle CPU session (`kaggle/kaggle_ease.ipynb`).
 python -m streamlit run app/streamlit_app.py
 ```
 
-The interface is in Vietnamese and laid out for a 1920 × 1080 screen.
+The interface is laid out for a 1920 × 1080 screen and written in Vietnamese. It has three tabs:
 
-- **Gợi ý cho khách** (existing customer): the top-10 of all seven models side by side, with the customer's
-  next purchase highlighted and SGKR's explanation of its first recommendation.
-- **Khách mới** (new customer): build a history by searching for products. SGKR, SPHR, EASE and GF-CF answer at
-  once; the graph baselines cannot serve unseen users.
-- **Đánh giá mô hình** (evaluation): leaderboards, charts, statistical tests and report figures, split into
-  the trained-model and the closed-form comparisons.
+- **Existing customer:** the top-10 of all seven models side by side, with the customer's next purchase
+  highlighted and SGKR's explanation of its first recommendation.
+- **New customer:** build a history by searching for products. SGKR, SPHR, EASE and GF-CF answer at once; the
+  graph baselines cannot serve users unseen in training.
+- **Model evaluation:** leaderboards, charts, statistical tests and report figures, split into the trained-model
+  and the closed-form comparisons.
 
 The demo loads the stored checkpoints and reads only the training and validation data.
 
@@ -92,7 +92,7 @@ that contribute most.
 **SPHR** represents a user by their normalised purchase history over diffusion-filtered item tables:
 
 ```math
-\operatorname{score}(u, i) = \mathbf{q}_u^{\top} \tilde{\mathbf{v}}_i + b_i,
+\mathrm{score}(u, i) = \mathbf{q}_u^{\top} \tilde{\mathbf{v}}_i + b_i,
 \qquad \mathbf{q}_u = |H_u|^{-1/2} \sum_{j \in H_u} \tilde{\mathbf{s}}_j
 ```
 

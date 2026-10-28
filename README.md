@@ -2,22 +2,22 @@
 
 **Tiếng Việt** · [English](README.en.md)
 
-Bài tập lớn cá nhân môn *Học máy nâng cao*. Tôi đề xuất hai mô hình gợi ý top-N: **SGKR** (mô hình item–item giải trực tiếp
-bằng công thức) và **SPHR** (mô hình dựa trên lịch sử mua, huấn luyện bằng gradient), rồi so sánh với năm
-baseline đã công bố trên bộ dữ liệu Amazon Electronics. Mọi mô hình dùng chung dữ liệu, cách chia, bộ đánh giá
-xếp hạng trên toàn catalog và các chỉ số; mọi con số trong tài liệu này đều tính lại được từ các file kết quả
-đã lưu.
+Bài tập lớn cá nhân môn *Học máy nâng cao*. Tôi đề xuất hai mô hình khuyến nghị: **SGKR** (hồi quy giữa các sản
+phẩm, giải trực tiếp bằng công thức) và **SPHR** (mô hình dựa trên lịch sử mua, huấn luyện bằng gradient), rồi
+so sánh với năm mô hình đối chứng đã công bố trên bộ dữ liệu Amazon Electronics. Mọi mô hình dùng chung dữ liệu,
+cách chia dữ liệu, bộ đánh giá xếp hạng trên toàn bộ danh mục sản phẩm và các chỉ số; mọi con số trong tài liệu
+này đều tính lại được từ các tệp kết quả đã lưu.
 
 ## Điểm chính
 
-- **SGKR có NDCG@20 cao nhất ở mật độ đầy đủ (0,0383)** và tốt hơn LightGCN, XSimGCL, DirectAU một cách có
-  ý nghĩa thống kê (p sau hiệu chỉnh Holm = 0,0006), trong khi chỉ mất **2,5 phút trên CPU** để huấn luyện,
-  nhanh hơn khoảng 17 lần so với mạng nơ-ron đồ thị nhanh nhất.
-- **SPHR mạnh nhất khi dữ liệu thưa:** NDCG@20 cao nhất ở 25 % và 50 % số tương tác train.
-- **So với các mô hình giải trực tiếp cùng kiểu**, SGKR ngang EASE đầy đủ ở mật độ đầy đủ (EASE cần ma trận
-  7,5 GB, không lưu được), và tốt hơn bản EASE rút gọn về cỡ lưu được cũng như GF-CF.
-- **Hạn chế:** SGKR không phải tốt nhất ở mật độ 50 %, và mọi kết quả đến từ một seed duy nhất trên tập
-  validation (xem [Hạn chế](#hạn-chế)).
+- **SGKR có NDCG@20 cao nhất khi dùng toàn bộ dữ liệu huấn luyện (0,0383)** và tốt hơn LightGCN, XSimGCL,
+  DirectAU một cách có ý nghĩa thống kê (p sau hiệu chỉnh Holm = 0,0006), trong khi chỉ mất **2,5 phút trên
+  CPU** để huấn luyện, nhanh hơn khoảng 17 lần so với mạng nơ-ron đồ thị nhanh nhất.
+- **SPHR mạnh nhất khi dữ liệu thưa:** NDCG@20 cao nhất khi chỉ dùng 25 % và 50 % dữ liệu huấn luyện.
+- **So với các mô hình giải trực tiếp cùng kiểu**, SGKR ngang EASE bản đầy đủ khi dùng toàn bộ dữ liệu (EASE
+  cần một ma trận 7,5 GB, không lưu được), và tốt hơn bản EASE rút gọn về cỡ lưu được cũng như GF-CF.
+- **Hạn chế:** SGKR không phải tốt nhất ở mức 50 % dữ liệu, và mọi kết quả đến từ một lần chạy với một hạt giống
+  ngẫu nhiên duy nhất trên tập kiểm định (xem [Hạn chế](#hạn-chế)).
 
 ## Mục lục
 
@@ -31,29 +31,30 @@ xếp hạng trên toàn catalog và các chỉ số; mọi con số trong tài 
 conda create -n AML python=3.11 && conda activate AML
 pip install -r requirements.txt
 
-python scripts/prepare_data.py                         # tải từ SNAP và dựng bộ dữ liệu
+python scripts/prepare_data.py                         # tải dữ liệu từ SNAP và dựng bộ dữ liệu
 python scripts/audit_data.py                           # kiểm tra dữ liệu
 
 python scripts/train_model.py --model sgkr --density 1.0
 #   --model    sgkr | sphr | lightgcn | xsimgcl | directau | ease | gfcf
-#   --density  1.0 | 0.75 | 0.5 | 0.25
+#   --density  1.0 | 0.75 | 0.5 | 0.25   (tỉ lệ dữ liệu huấn luyện được giữ lại)
 
-python scripts/summarize_results.py                    # results/summary.csv
+python scripts/summarize_results.py                    # bảng tổng hợp results/summary.csv
 python scripts/make_report.py                          # hình H1–H8, bảng B1–B4 (so sánh chính)
-python scripts/make_closed_form_report.py              # hình closed-form, bảng B5–B6 (so sánh bổ sung)
-python scripts/verify_results.py                       # tính lại mọi chỉ số từ các file đã lưu
-python -m pytest -q tests
+python scripts/make_closed_form_report.py              # hình và bảng B5–B6 (so sánh bổ sung)
+python scripts/verify_results.py                       # tính lại mọi chỉ số từ các tệp đã lưu
+python -m pytest -q tests                              # chạy kiểm thử
 ```
 
-Mỗi run ghi vào `results/<model>/d<mật độ>/seed42/`: `metrics.json`, dự đoán validation, checkpoint,
-`history.csv` (với mô hình huấn luyện theo epoch) và `logs/` (kế hoạch run, bản lưu mã nguồn, tiến độ, ngân sách
-tài nguyên). Run đã xong được bỏ qua. Các mô hình huấn luyện lặp chạy đủ 200 epoch, không dừng sớm, và giữ
-checkpoint có NDCG@20 validation cao nhất. `python scripts/run_experiments.py` chạy thực nghiệm chính: SGKR, SPHR
-và 3 GNN ở 4 mật độ.
+Mỗi lần chạy ghi kết quả vào `results/<mô hình>/d<tỉ lệ>/seed42/`: chỉ số (`metrics.json`), dự đoán trên tập
+kiểm định, trọng số mô hình đã lưu (checkpoint), lịch sử huấn luyện `history.csv` (với mô hình huấn luyện lặp)
+và thư mục `logs/` (kế hoạch chạy, bản lưu mã nguồn, tiến độ, tài nguyên đã dùng). Lần chạy nào đã xong sẽ được
+bỏ qua. Các mô hình huấn luyện lặp chạy đủ 200 vòng (epoch), không dừng sớm, và giữ lại trọng số có NDCG@20 trên
+tập kiểm định cao nhất. Lệnh `python scripts/run_experiments.py` chạy toàn bộ thực nghiệm chính: SGKR, SPHR và
+3 mạng nơ-ron đồ thị ở cả 4 tỉ lệ dữ liệu.
 
-**Phần cứng.** SGKR và GF-CF chạy được trên CPU laptop. SPHR và các baseline đồ thị được train trên GPU Kaggle
-(`kaggle/kaggle_train.ipynb`). EASE phải nghịch đảo ma trận dày 44.843 × 44.843 nên cần **khoảng 9,1 GB RAM
-trống**; mô hình này được chạy trên Kaggle CPU (`kaggle/kaggle_ease.ipynb`).
+**Phần cứng.** SGKR và GF-CF chạy được trên CPU máy tính cá nhân. SPHR và các mạng nơ-ron đồ thị được huấn luyện
+trên GPU của Kaggle (`kaggle/kaggle_train.ipynb`). EASE phải nghịch đảo một ma trận dày 44.843 × 44.843 nên cần
+**khoảng 9,1 GB RAM trống**; mô hình này được chạy trên CPU của Kaggle (`kaggle/kaggle_ease.ipynb`).
 
 ## Demo
 
@@ -61,74 +62,77 @@ trống**; mô hình này được chạy trên Kaggle CPU (`kaggle/kaggle_ease.
 python -m streamlit run app/streamlit_app.py
 ```
 
-Giao diện tiếng Việt, bố cục cho màn hình 1920 × 1080.
+Giao diện bố trí cho màn hình 1920 × 1080, gồm ba thẻ:
 
-- **Gợi ý cho khách:** top-10 của cả 7 mô hình đặt cạnh nhau, đánh dấu sản phẩm khách mua tiếp theo, kèm phần
-  giải thích của SGKR cho gợi ý số 1.
-- **Khách mới:** tự tạo lịch sử bằng cách tìm sản phẩm. SGKR, SPHR, EASE và GF-CF gợi ý ngay; các baseline đồ
-  thị không phục vụ được user chưa có lúc train.
-- **Đánh giá mô hình:** bảng xếp hạng, biểu đồ, kiểm định thống kê và hình báo cáo, chia thành nhóm cần huấn
-  luyện và nhóm giải trực tiếp.
+- **Gợi ý cho khách:** 10 gợi ý hàng đầu của cả 7 mô hình đặt cạnh nhau, đánh dấu sản phẩm khách mua tiếp theo,
+  kèm lời giải thích của SGKR cho gợi ý thứ nhất.
+- **Khách mới:** tự tạo lịch sử mua bằng cách tìm sản phẩm. SGKR, SPHR, EASE và GF-CF gợi ý được ngay; các mạng
+  nơ-ron đồ thị chỉ phục vụ được người dùng đã có trong dữ liệu huấn luyện.
+- **Đánh giá mô hình:** bảng xếp hạng, biểu đồ, kiểm định thống kê và hình trong báo cáo, chia thành nhóm cần
+  huấn luyện và nhóm giải trực tiếp.
 
-Demo nạp các checkpoint đã lưu và chỉ đọc tập train, validation.
+Demo nạp các trọng số mô hình đã lưu và chỉ đọc tập huấn luyện và tập kiểm định.
 
 ## Mô hình
 
-| Mô hình | Họ | Cách tạo ra | Phần cứng |
+| Mô hình | Loại | Cách tạo ra | Phần cứng |
 |---|---|---|---|
-| **SGKR** (đề xuất) | Hồi quy item–item | Giải trực tiếp bằng công thức | CPU |
-| **SPHR** (đề xuất) | Phân rã dựa trên lịch sử | Adam, softmax trên toàn catalog | GPU |
-| LightGCN [1] | Mạng nơ-ron đồ thị | Huấn luyện gradient, tối đa 200 epoch | GPU |
-| XSimGCL [2] | Mạng nơ-ron đồ thị + học tương phản | Huấn luyện gradient, tối đa 200 epoch | GPU |
-| DirectAU [3] | Mục tiêu alignment–uniformity | Huấn luyện gradient, tối đa 200 epoch | GPU |
-| EASE [4] | Hồi quy item–item | Giải trực tiếp bằng công thức | CPU |
-| GF-CF [5] | Lọc trên đồ thị | Giải trực tiếp (SVD) | CPU |
+| **SGKR** (đề xuất) | Hồi quy giữa các sản phẩm | Giải trực tiếp bằng công thức | CPU |
+| **SPHR** (đề xuất) | Phân rã dựa trên lịch sử mua | Tối ưu bằng Adam, hàm softmax trên toàn danh mục | GPU |
+| LightGCN [1] | Mạng nơ-ron đồ thị | Huấn luyện bằng gradient, tối đa 200 vòng | GPU |
+| XSimGCL [2] | Mạng nơ-ron đồ thị kết hợp học tương phản | Huấn luyện bằng gradient, tối đa 200 vòng | GPU |
+| DirectAU [3] | Tối ưu trực tiếp độ khớp và độ phân tán | Huấn luyện bằng gradient, tối đa 200 vòng | GPU |
+| EASE [4] | Hồi quy giữa các sản phẩm | Giải trực tiếp bằng công thức | CPU |
+| GF-CF [5] | Lọc tín hiệu trên đồ thị | Giải trực tiếp (phân tích SVD) | CPU |
 
-**SGKR** là hồi quy ridge item–item có chuẩn hóa theo đồ thị. Mỗi sản phẩm được dự đoán từ 128 sản phẩm liên
-quan nhất, với mức chuẩn hóa thích nghi; hệ phương trình được giải chính xác (Cholesky) và loại chính sản phẩm
-mục tiêu khỏi ngữ cảnh của nó. SGKR không có tham số riêng cho từng user và không cần bộ tối ưu, nên chấm điểm
-được ngay cho bất kỳ lịch sử mua nào, kể cả user chưa từng xuất hiện khi train. Mô hình cũng giải thích được
-mỗi gợi ý bằng các sản phẩm trong lịch sử đóng góp nhiều nhất.
+**SGKR** là hồi quy ridge giữa các sản phẩm, có thêm ràng buộc theo đồ thị. Mỗi sản phẩm được dự đoán từ 128
+sản phẩm liên quan nhất với mức phạt điều chỉnh theo từng sản phẩm; hệ phương trình được giải chính xác bằng
+phân tích Cholesky, trong đó chính sản phẩm cần dự đoán được loại khỏi dữ liệu đầu vào của nó. SGKR không có
+tham số riêng cho từng người dùng và không cần thuật toán tối ưu, nên chấm điểm được ngay cho bất kỳ lịch sử mua
+nào, kể cả người dùng chưa từng xuất hiện khi huấn luyện. Mô hình còn giải thích được mỗi gợi ý bằng những sản
+phẩm trong lịch sử đóng góp nhiều nhất.
 
-**SPHR** biểu diễn user bằng lịch sử mua đã chuẩn hóa trên các bảng item được lọc khuếch tán:
+**SPHR** biểu diễn mỗi người dùng bằng lịch sử mua đã chuẩn hóa, trên các bảng véc-tơ sản phẩm đã được lọc
+khuếch tán qua đồ thị:
 
 ```math
-\operatorname{score}(u, i) = \mathbf{q}_u^{\top} \tilde{\mathbf{v}}_i + b_i,
+\mathrm{score}(u, i) = \mathbf{q}_u^{\top} \tilde{\mathbf{v}}_i + b_i,
 \qquad \mathbf{q}_u = |H_u|^{-1/2} \sum_{j \in H_u} \tilde{\mathbf{s}}_j
 ```
 
-trong đó $`H_u`$ là lịch sử mua của user, $`\tilde{\mathbf{s}}_j`$ và $`\tilde{\mathbf{v}}_i`$ là vector nguồn và vector đích
-đã lọc của sản phẩm, $`b_i`$ là độ lệch riêng của sản phẩm. Mô hình được huấn luyện bằng Adam với softmax trên toàn
-catalog theo ngữ cảnh leave-one-out. Giống SGKR, SPHR phục vụ được user mới chỉ từ lịch sử.
+trong đó $`H_u`$ là tập sản phẩm người dùng $`u`$ đã mua, $`\tilde{\mathbf{s}}_j`$ và $`\tilde{\mathbf{v}}_i`$
+là véc-tơ nguồn và véc-tơ đích đã lọc của sản phẩm, còn $`b_i`$ là độ lệch riêng của sản phẩm $`i`$. Mô hình
+được tối ưu bằng Adam với hàm softmax trên toàn danh mục, mỗi lần che một sản phẩm trong lịch sử để dự đoán.
+Giống SGKR, SPHR phục vụ được người dùng mới chỉ từ lịch sử mua.
 
-Ba baseline đồ thị học một vector riêng cho từng user lúc train, nên không gợi ý được cho user mới nếu không
-huấn luyện lại.
+Ba mạng nơ-ron đồ thị học một véc-tơ riêng cho từng người dùng khi huấn luyện, nên không gợi ý được cho người
+dùng mới nếu không huấn luyện lại.
 
 ## Dữ liệu
 
-Đánh giá Amazon Electronics 5-core [6, 7]. Đánh giá từ 4 sao trở lên là tương tác dương; user và sản phẩm có ít
-nhất 5 tương tác; lịch sử của mỗi user được chia theo thời gian.
+Bộ đánh giá sản phẩm Amazon Electronics, phiên bản chỉ giữ người dùng và sản phẩm có ít nhất 5 đánh giá [6, 7].
+Đánh giá từ 4 sao trở lên được coi là một lượt mua phù hợp; lịch sử của mỗi người dùng được chia theo thời gian.
 
 | Thống kê | Giá trị |
 |---|---:|
-| Số user | 124.895 |
+| Số người dùng | 124.895 |
 | Số sản phẩm | 44.843 |
-| Tương tác train | 858.192 |
-| Tương tác validation | 107.274 |
-| Độ thưa tập train | 99,98 % |
-| Độ dài lịch sử, trung bình / trung vị | 6,87 / 5 |
+| Số tương tác huấn luyện | 858.192 |
+| Số tương tác kiểm định | 107.274 |
+| Độ thưa của dữ liệu huấn luyện | 99,98 % |
+| Độ dài lịch sử mua, trung bình / trung vị | 6,87 / 5 |
 
-Để đo độ bền khi dữ liệu khan hiếm, mọi mô hình còn được train trên **75 %, 50 % và 25 %** số tương tác train
-(lấy mẫu với seed 42).
+Để đo độ bền khi dữ liệu khan hiếm, mọi mô hình còn được huấn luyện trên **75 %, 50 % và 25 %** số tương tác
+huấn luyện (lấy mẫu cố định với hạt giống 42).
 
 ## Kết quả
 
 ### Độ chính xác
 
-NDCG@20 trên tập validation: xếp hạng trên toàn bộ catalog, loại các sản phẩm user đã mua, 107.215 user được
-đánh giá.
+NDCG@20 trên tập kiểm định: mỗi mô hình xếp hạng toàn bộ danh mục, loại các sản phẩm người dùng đã mua; có
+107.215 người dùng được đánh giá.
 
-| Mô hình | 25 % | 50 % | 75 % | 100 % | Thời gian train ở 100 % |
+| Mô hình | 25 % | 50 % | 75 % | 100 % | Thời gian huấn luyện ở 100 % |
 |---|---:|---:|---:|---:|---:|
 | **SGKR** | 0,0080 | 0,0171 | 0,0293 | **0,0383** | 2,5 phút (CPU) |
 | **SPHR** | **0,0177** | **0,0227** | 0,0290 | 0,0352 | 127 phút (GPU) |
@@ -138,23 +142,23 @@ NDCG@20 trên tập validation: xếp hạng trên toàn bộ catalog, loại c�
 | EASE | 0,0067 | 0,0192 | **0,0294** | 0,0380 | 11 phút (CPU) |
 | GF-CF | 0,0039 | 0,0038 | 0,0084 | 0,0189 | 45 phút (CPU) |
 
-Thời gian train đo trên phần cứng khác nhau (CPU và GPU), chỉ nên so theo bậc độ lớn.
+Thời gian huấn luyện đo trên phần cứng khác nhau (CPU và GPU), nên chỉ so được theo bậc độ lớn.
 
 <p align="center">
-  <img src="reports/figures/H1_density_ndcg20.png" width="49%" alt="NDCG@20 theo mật độ, nhóm cần huấn luyện">
-  <img src="reports/figures/H1_closed_form_density_ndcg20.png" width="49%" alt="NDCG@20 theo mật độ, nhóm giải trực tiếp">
+  <img src="reports/figures/H1_density_ndcg20.png" width="49%" alt="NDCG@20 theo tỉ lệ dữ liệu, nhóm cần huấn luyện">
+  <img src="reports/figures/H1_closed_form_density_ndcg20.png" width="49%" alt="NDCG@20 theo tỉ lệ dữ liệu, nhóm giải trực tiếp">
 </p>
-<p align="center"><sub>NDCG@20 theo mật độ dữ liệu train. Trái: SGKR, SPHR và các baseline đồ thị. Phải: SGKR và
-các baseline giải trực tiếp.</sub></p>
+<p align="center"><sub>NDCG@20 theo tỉ lệ dữ liệu huấn luyện. Trái: SGKR, SPHR và các mạng nơ-ron đồ thị.
+Phải: SGKR và các mô hình giải trực tiếp.</sub></p>
 
 ### So sánh thống kê
 
-Các phép so sánh chia thành hai nhóm, mỗi nhóm hiệu chỉnh Holm riêng. Mọi kiểm định là paired bootstrap theo
-user (10.000 lần lấy mẫu), một phía theo hướng mô hình đề xuất tốt hơn.
+Các phép so sánh chia thành hai nhóm, mỗi nhóm hiệu chỉnh Holm riêng. Mọi kiểm định là bootstrap ghép cặp theo
+người dùng (10.000 lần lấy mẫu lại), một phía, theo hướng mô hình đề xuất tốt hơn.
 
-**So sánh chính: mô hình đề xuất so với mạng nơ-ron đồ thị** (bảng B3, mật độ đầy đủ).
+**So sánh chính: mô hình đề xuất với các mạng nơ-ron đồ thị** (bảng B3, toàn bộ dữ liệu).
 
-| So sánh | Δ NDCG@20 | KTC 95 % | p Holm |
+| So sánh | Chênh lệch NDCG@20 | Khoảng tin cậy 95 % | p Holm |
 |---|---:|---|---:|
 | SGKR − LightGCN | +0,0117 | [+0,0109; +0,0126] | 0,0006 |
 | SGKR − XSimGCL | +0,0054 | [+0,0046; +0,0061] | 0,0006 |
@@ -163,54 +167,56 @@ user (10.000 lần lấy mẫu), một phía theo hướng mô hình đề xuấ
 | SPHR − XSimGCL | +0,0023 | [+0,0017; +0,0028] | 0,0006 |
 | SPHR − DirectAU | +0,0031 | [+0,0025; +0,0038] | 0,0006 |
 
-**So sánh bổ sung: SGKR với các mô hình giải trực tiếp** (bảng B5–B6, Holm trên 3 phép so sánh mỗi mật độ).
-Nhóm so sánh này được lập sau khi đã xem kết quả nên mang tính khám phá.
+**So sánh bổ sung: SGKR với các mô hình giải trực tiếp** (bảng B5–B6, hiệu chỉnh Holm trên 3 phép so sánh ở mỗi
+tỉ lệ dữ liệu). Nhóm so sánh này được lập sau khi đã xem kết quả nên chỉ mang tính khám phá.
 
-| SGKR − … | 25 % | 50 % | 75 % | 100 % |
+| SGKR so với | 25 % | 50 % | 75 % | 100 % |
 |---|---|---|---|---|
-| EASE (đầy đủ, 7,5 GB) | SGKR hơn | EASE hơn | ngang (p = 0,72) | ngang (p = 0,051) |
-| EASE top-128 (25–32 MB) | SGKR hơn | EASE hơn | SGKR hơn | SGKR hơn |
+| EASE bản đầy đủ (7,5 GB) | SGKR hơn | EASE hơn | ngang (p = 0,72) | ngang (p = 0,051) |
+| EASE rút gọn 128 trọng số (25–32 MB) | SGKR hơn | EASE hơn | SGKR hơn | SGKR hơn |
 | GF-CF | SGKR hơn | SGKR hơn | SGKR hơn | SGKR hơn |
 
-Checkpoint SGKR chiếm 6–41 MB tùy mật độ, cỡ tương đương EASE top-128.
+Trọng số đã lưu của SGKR chiếm 6–41 MB tùy tỉ lệ dữ liệu, cỡ tương đương bản EASE rút gọn.
 
-**Chỗ SGKR không thắng.** Ở mật độ 50 %, SGKR thấp hơn cả 3 baseline đồ thị và cả hai bản EASE. Ở 25 % và 50 %,
-SPHR là mô hình mạnh nhất. GF-CF yếu trên dữ liệu rất thưa này vì cách chuẩn hóa bậc đối xứng của nó ưu tiên
-các sản phẩm ít người mua.
+**Chỗ SGKR không thắng.** Ở mức 50 % dữ liệu, SGKR thấp hơn cả 3 mạng nơ-ron đồ thị và cả hai bản EASE. Ở mức
+25 % và 50 %, SPHR là mô hình mạnh nhất. GF-CF yếu trên dữ liệu rất thưa này vì cách chuẩn hóa của nó ưu tiên
+những sản phẩm ít người mua.
 
 ## Giao thức đánh giá
 
-- **Mục tiêu:** sản phẩm mua tiếp theo của mỗi user. Mọi mô hình xếp hạng toàn bộ 44.843 sản phẩm, loại các
-  sản phẩm user đã mua, và được đánh giá trên cùng một nhóm user.
+- **Mục tiêu dự đoán:** sản phẩm mua tiếp theo của mỗi người dùng. Mọi mô hình xếp hạng toàn bộ 44.843 sản phẩm,
+  loại các sản phẩm người dùng đã mua, và được đánh giá trên cùng một nhóm người dùng.
 - **Chỉ số:** NDCG@10/20, Recall@10/20 và MRR@20.
-- **Chọn cấu hình:** chỉ so trên một nửa số user validation (chia theo băm ID); nửa còn lại dành để xác nhận.
-  Mọi quyết định được ghi vào nhật ký theo kiểu chỉ thêm.
-- **Kiểm định:** paired bootstrap theo user, một phía, hiệu chỉnh Holm trong từng nhóm so sánh.
-- **Cấu hình baseline:** EASE và GF-CF mỗi mô hình dùng một cấu hình cố định, không tinh chỉnh trên dữ liệu
-  này: EASE λ = 300 (giá trị giữa lưới thường dùng 100/300/1000), GF-CF theo mặc định của tác giả (k = 256,
-  α = 0,3). Demo dùng EASE rút gọn còn 128 trọng số lớn nhất mỗi sản phẩm; mọi số EASE ở trên là ma trận đầy đủ
-  trừ khi ghi *top-128*.
+- **Chọn cấu hình:** chỉ so sánh trên một nửa số người dùng của tập kiểm định (chia theo mã băm); nửa còn lại
+  dành để xác nhận. Mọi quyết định được ghi vào nhật ký, chỉ thêm, không sửa.
+- **Kiểm định thống kê:** bootstrap ghép cặp theo người dùng, một phía, hiệu chỉnh Holm trong từng nhóm so sánh.
+- **Cấu hình mô hình đối chứng:** EASE và GF-CF mỗi mô hình dùng một cấu hình cố định, không tinh chỉnh trên dữ
+  liệu này: EASE với λ = 300 (giá trị giữa của lưới thường dùng 100/300/1000), GF-CF theo mặc định của tác giả
+  (k = 256, α = 0,3). Demo dùng bản EASE rút gọn, chỉ giữ 128 trọng số lớn nhất của mỗi sản phẩm; mọi số liệu EASE
+  ở trên là bản đầy đủ, trừ khi ghi rõ là bản rút gọn.
 
 ## Hạn chế
 
-- **Một seed (42).** Chưa đo độ dao động giữa các seed; khoảng tin cậy chỉ phản ánh việc lấy mẫu user.
-- **Chỉ trên validation.** Tập test được giữ riêng; không con số nào ở đây là kết quả test cuối cùng.
-- **So sánh bổ sung mang tính khám phá.** Nhóm so sánh với mô hình giải trực tiếp được thêm sau khi đã biết kết
-  quả.
-- **Baseline giải trực tiếp chưa tinh chỉnh.** EASE và GF-CF không được tinh chỉnh trên dữ liệu này, nên điểm
-  của chúng có thể thấp hơn mức tốt nhất chúng đạt được.
+- **Một hạt giống ngẫu nhiên (42).** Chưa đo độ dao động giữa các lần chạy; khoảng tin cậy chỉ phản ánh sai số
+  do lấy mẫu người dùng.
+- **Chỉ trên tập kiểm định.** Tập kiểm tra cuối cùng (test) được giữ riêng; không con số nào ở đây là kết quả
+  kiểm tra cuối cùng.
+- **So sánh bổ sung mang tính khám phá.** Nhóm so sánh với các mô hình giải trực tiếp được thêm vào sau khi đã
+  biết kết quả.
+- **Mô hình giải trực tiếp chưa tinh chỉnh.** EASE và GF-CF không được tinh chỉnh trên dữ liệu này, nên điểm của
+  chúng có thể thấp hơn mức tốt nhất chúng đạt được.
 - **Một bộ dữ liệu.** Mọi kết luận chỉ áp dụng cho Amazon Electronics.
 
 ## Cấu trúc thư mục
 
 ```
-configs/   cấu hình đã khóa: sgkr, sphr, lightgcn, xsimgcl, directau, ease, gfcf, common
+configs/   cấu hình đã chốt: sgkr, sphr, lightgcn, xsimgcl, directau, ease, gfcf, common
 src/       xử lý dữ liệu, bộ đánh giá, hàm mất mát, vòng huấn luyện, các mô hình (src/models/*.py)
-scripts/   các lệnh chạy; scripts/verify/ chứa kiểm chứng SymPy cho các nghiệm đóng
+scripts/   các lệnh chạy; scripts/verify/ kiểm chứng bằng SymPy các công thức giải trực tiếp
 app/       demo Streamlit: streamlit_app.py (giao diện), recommender.py (nạp mô hình), benchmark.py (thống kê)
-kaggle/    notebook dùng trên Kaggle
-results/   mỗi run một thư mục, cùng summary.csv (git chỉ lưu checkpoint và lịch sử huấn luyện)
-reports/   figures/ (ảnh PNG) và tables/ (bảng CSV)
+kaggle/    sổ tay (notebook) dùng trên Kaggle
+results/   mỗi lần chạy một thư mục, cùng bảng summary.csv (git chỉ lưu trọng số và lịch sử huấn luyện)
+reports/   figures/ (hình PNG) và tables/ (bảng CSV)
 tests/     bộ kiểm thử pytest
 ```
 
