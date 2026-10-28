@@ -94,6 +94,7 @@ reports/**
 
 # Documentation
 *.md
+!README.vi.md
 
 # Tests stay local only (not pushed to git)
 test/
